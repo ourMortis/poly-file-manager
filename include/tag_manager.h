@@ -34,12 +34,21 @@ public:
 
     void eraseTag(tag tg);
 
+    void restoreTag(tag tg);
+
     void purgeTag(tag tg);
 
     void purgeAll();
 
-    void insertSoftLink();
-    
+    void insertSoftLink(tag tg, soft_link sl);
+
+    void eraseSoftLink(tag tg, soft_link sl);
+
+    void clearSoftLink(tag tg);
+
+
+
+
 };
 
 #endif //__TAG_MANAGER_H__

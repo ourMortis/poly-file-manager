@@ -11,22 +11,24 @@ class FileMeta
 {
 private:
     std::filesystem::path file_path;
-    std::set<std::string&> tags;
+    std::set<std::string> tags;
 
 public:
     FileMeta(std::filesystem::path file_path);
 
-    PolyFileManagerError isValidPath(std::filesystem::path file_path); //Is absolute path to existing file?
+    static PolyFileManagerError isValidPath(std::filesystem::path file_path); //Is absolute path to existing file?
 
-    void changeFilePath(std::filesystem::path file_path);
+    void setFilePath(std::filesystem::path file_path);
 
     int getTagCount();
-    
-    bool hasTag(std::string& tag);
 
-    void insertTag(std::string& tag);
+    std::set<std::string> getTags();
+
+    bool hasTag(std::string tag);
+
+    void insertTag(std::string tag);
     
-    void removeTag(std::string& tag);
+    void removeTag(std::string tag);
 
     
 };

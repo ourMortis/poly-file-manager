@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug PolyFileManager",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${command:cmake.buildDirectory}/file_meta_test.exe", // 你的可执行文件名
+      "args": [], // 程序参数（如需要）
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/MinGW-w64/bin/gdb.exe", // 你的 gdb 路径
+      "setupCommands": [
+        {
+          "description": "启用 pretty-printing",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      //"preLaunchTask": "CMake: Build" // 先编译再调试
+    }
+  ]
+}

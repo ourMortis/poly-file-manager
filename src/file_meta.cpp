@@ -1,8 +1,15 @@
-#include "../include/file_meta.h"
+#include "file_meta.h"
 
 FileMeta::FileMeta(std::filesystem::path path)
 {
-    file_path = path;
+    if(isValidPath(path) == PolyFileManagerError::OK)
+    {
+        file_path = path;
+    }
+    else
+    {
+        file_path = "";
+    }
 }
 
 PolyFileManagerError FileMeta::isValidPath(std::filesystem::path file_path)
@@ -23,7 +30,7 @@ PolyFileManagerError FileMeta::isValidPath(std::filesystem::path file_path)
     return PolyFileManagerError::OK;
 }
 
-void FileMeta::changeFilePath(std::filesystem::path new_path)
+void FileMeta::setFilePath(std::filesystem::path new_path)
 {
     if(isValidPath(new_path) == PolyFileManagerError::OK)
     {
@@ -35,19 +42,25 @@ int FileMeta::getTagCount()
 {
     return tags.size();
 }
-bool FileMeta::hasTag(std::string &tag)
+
+std::set<std::string> FileMeta::getTags()
+{
+    return tags;
+}
+
+bool FileMeta::hasTag(std::string tag)
 {
     return tags.find(tag) != tags.end() ? true : false;
 }
-void FileMeta::insertTag(std::string &tag)
+void FileMeta::insertTag(std::string tag)
 {
-    if(hasTag(tag))
+    if(!hasTag(tag))
     {
         tags.insert(tag);
     }
 }
 
-void FileMeta::removeTag(std::string &tag)
+void FileMeta::removeTag(std::string tag)
 {
     if(hasTag(tag))
     {
