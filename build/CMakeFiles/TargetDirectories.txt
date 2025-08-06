@@ -1,3 +1,0 @@
-D:/project/PolyFileManager/build/CMakeFiles/file_meta_test.dir
-D:/project/PolyFileManager/build/CMakeFiles/edit_cache.dir
-D:/project/PolyFileManager/build/CMakeFiles/rebuild_cache.dir
