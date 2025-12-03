@@ -1,64 +1,67 @@
-#pragma once
+#ifndef FILE_MANAGER_H
+#define FILE_MANAGER_H
 
 #include <iostream>
-#include <unordered_map>
-#include <filesystem>
+#include <map>
 #include <set>
+#include <vector>
+#include <string>
+#include <filesystem>
 #include <memory>
 #include <algorithm>
-#include <vector>
 
-using file_path = std::filesystem::path;
-using file_tag = std::string;
+// 类型别名定义 - 使用更清晰的命名
+using FileTag = std::string;
+using FilePath = std::filesystem::path;
+using FileTagPtr = std::shared_ptr<FileTag>;
+using FilePathPtr = std::shared_ptr<FilePath>;
 
-using sptr_file_path = std::shared_ptr<file_path>;
-using sptr_file_tag = std::shared_ptr<file_tag>;
+class FileManager {
+private:
+    // 主注册表
+    std::map<FileTag, FileTagPtr> tag_registry_;           // 存储所有标签
+    std::map<FilePath, FilePathPtr> path_registry_;        // 存储所有路径
+    
+    // 关联映射表
+    std::map<FileTagPtr, std::set<FilePathPtr>> tag_to_paths_map_;  // 标签到路径的映射
+    std::map<FilePathPtr, std::set<FileTagPtr>> path_to_tags_map_;  // 路径到标签的映射
 
-class FileManager
-{
 public:
     FileManager();
     ~FileManager();
 
-    void create_tag(file_tag tag);
-    void change_tag(const file_tag &old_tag, file_tag new_tag);
-    void delete_tag(const file_tag &tag);
-    std::vector<file_tag> get_tags();
-
-    void create_path(file_path path);
-    void change_path(const file_path &old_path, file_path new_path);
-    void delete_path(const file_path &path);
-    std::vector<file_path> get_paths();
-
-    void add_file_tag(file_path &path, file_tag tag);
-    void delete_file_tag(file_path &path, file_tag tag);
-
-
-    std::vector<file_tag> get_tags(file_path path);
+    // 标签管理
+    void create_tag(const FileTag& tag);
+    void rename_tag(const FileTag& old_tag, const FileTag& new_tag);
+    void remove_tag(const FileTag& tag);
+    std::vector<FileTag> get_all_tags() const;
     
-    std::vector<file_path> get_paths(file_tag tag);
-
-    // template<template<typename...> class Container, typename T, typename E>
-    // auto get_extracted(const Container<T>& container)
-    // {
-    //     Container<E> res;
-    //     for(const auto i : container)
-    //     {
-    //         res.insert(*i);
-    //     }
-    //     return res;
-    // }
-
-    void print_tags();
-    void print_tag_with_paths();
-    void print_paths();
-    void print_path_with_tags();
-
-
-private: 
-    std::unordered_map<file_tag, sptr_file_tag> tags;
-    std::unordered_map<sptr_file_tag, std::set<sptr_file_path>> tag_with_paths;
-    std::unordered_map<file_path, sptr_file_path> paths;
-    std::unordered_map<sptr_file_path, std::set<sptr_file_tag>> path_with_tags;
-
+    // 路径管理
+    void create_path(const FilePath& path);
+    void rename_path(const FilePath& old_path, const FilePath& new_path);
+    void remove_path(const FilePath& path);
+    std::vector<FilePath> get_all_paths() const;
+    
+    // 标签-路径关联管理
+    void assign_tag_to_path(const FilePath& path, const FileTag& tag);
+    void remove_tag_from_path(const FilePath& path, const FileTag& tag);
+    
+    // 查询操作
+    std::set<FileTag> get_tags_for_path(const FilePath& path) const;
+    std::set<FilePath> get_paths_with_tag(const FileTag& tag) const;
+    
+    // 调试输出
+    void dump_tags() const;
+    void dump_tag_assignments() const;
+    void dump_paths() const;
+    void dump_path_tags() const;
+    
+private:
+    // 内部辅助函数
+    FileTagPtr get_or_create_tag_ptr(const FileTag& tag);
+    FilePathPtr get_or_create_path_ptr(const FilePath& path);
+    FileTagPtr find_tag_ptr(const FileTag& tag) const;
+    FilePathPtr find_path_ptr(const FilePath& path) const;
 };
+
+#endif // FILE_MANAGER_H
