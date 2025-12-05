@@ -16,7 +16,7 @@ private:
     
 
 public:
-    FileSystemOrganizer();
+    FileSystemOrganizer(const FilePath& path);
     ~FileSystemOrganizer();
 
     void create_category_dirs(const std::vector<std::string> &category_names);
@@ -28,6 +28,7 @@ public:
     void remove_symlink_in_category(const std::string &category_name, const std::vector<FilePath> &paths);
     void remove_symlink_in_category(const std::string &category_name, const FilePath &path);
 
+    std::vector<FilePath> get_symlinks_in_category(const std::string &category_name);
 };
 
 #endif // FILE_SYSTEM_ORGANIZER_H

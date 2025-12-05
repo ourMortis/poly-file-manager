@@ -9,4 +9,7 @@ include_directories(./include)
 
 #add_executable(main src/main.cpp src/file_manager.cpp)
 
-add_executable(basic_test1 test/basic_test1.cpp src/file_manager.cpp)
+#add_executable(basic_test1 test/basic_test1.cpp src/file_manager.cpp)
+
+
+add_executable(organizer_test1 test/organizer_test1.cpp src/file_system_organizer.cpp)
