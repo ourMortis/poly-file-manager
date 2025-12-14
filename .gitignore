@@ -1,7 +1,6 @@
 # Build and settings
 build/
 .vscode/
-test/
 
 # Prerequisites
 *.d

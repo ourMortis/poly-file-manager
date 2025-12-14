@@ -27,7 +27,7 @@ private:
 
 public:
     FileManager();
-    ~FileManager();
+    ~FileManager() = default;
 
     // 标签管理
     void create_tag(const FileTag& tag);

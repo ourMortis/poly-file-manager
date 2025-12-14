@@ -4,10 +4,6 @@ FileManager::FileManager()
 {
 }
 
-FileManager::~FileManager()
-{
-}
-
 // ==================== 标签管理 ====================
 void FileManager::create_tag(const FileTag& tag)
 {
