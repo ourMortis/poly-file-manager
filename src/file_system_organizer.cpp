@@ -1,7 +1,13 @@
 #include "file_system_organizer.h"
-#ifdef _WIN32
-#include "windows_shortcut_creator.h"
-#endif
+
+FileSystemOrganizer::FileSystemOrganizer(const FilePath& path)
+{
+    if(!path.is_absolute() || !std::filesystem::is_directory(path))
+    {
+        throw std::invalid_argument("Path is not absolute or not a dirctory: " + path.string());
+    }
+    repo_path_ = path;
+}
 
 FilePath FileSystemOrganizer::get_symlink_path(const std::string &category_name, const FilePath &target_path)
 {
@@ -13,15 +19,6 @@ FilePath FileSystemOrganizer::get_symlink_path(const std::string &category_name,
                             (target_path.filename().empty() ? target_path.parent_path().filename() : target_path.filename());
 #endif
     return symlink_path;
-}
-
-FileSystemOrganizer::FileSystemOrganizer(const FilePath& path)
-{
-    if(!path.is_absolute() || !std::filesystem::is_directory(path))
-    {
-        throw std::invalid_argument("Path is not absolute or not a dirctory: " + path.string());
-    }
-    repo_path_ = path;
 }
 
 void FileSystemOrganizer::create_category_dirs(const std::vector<std::string> &category_names)

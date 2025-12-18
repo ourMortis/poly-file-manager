@@ -1,7 +1,19 @@
 #include "file_manager.h"
 
-FileManager::FileManager()
+FileManager::FileManager(const FileTagData& data)
 {
+    for(const auto& tag : data.index_to_tag)
+    {
+        create_tag(tag);
+    }
+    for(const auto& path_index : data.path_to_index_map)
+    {
+        create_path(path_index.first);
+        for(const auto& index : path_index.second)
+        {
+            assign_tag_to_path(path_index.first, data.index_to_tag[index]);
+        }
+    }
 }
 
 // ==================== 标签管理 ====================
@@ -175,6 +187,26 @@ std::set<FilePath> FileManager::get_paths_with_tag(const FileTag& tag) const
     }
     
     return paths;
+}
+
+FileTagData FileManager::get_file_tag_data() const
+{
+    FileTagData data;
+    std::map<FileTag, int> hash;
+    
+    for(const auto& tag : tag_registry_ | std::views::keys)
+    {
+        int i = 0;
+        data.index_to_tag.push_back(tag);
+        hash[tag] = i++;
+    }
+    for(const auto& pathptr_tagptrs : path_to_tags_map_)
+    {
+        for(const auto& tag_ptr : pathptr_tagptrs.second)
+        {
+            data.path_to_index_map[*(pathptr_tagptrs.first)].push_back(hash[*tag_ptr]);
+        }
+    }
 }
 
 // ==================== 调试输出 ====================

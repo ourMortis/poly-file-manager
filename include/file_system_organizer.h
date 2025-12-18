@@ -1,12 +1,14 @@
 #ifndef FILE_SYSTEM_ORGANIZER_H
 #define FILE_SYSTEM_ORGANIZER_H
 
-#include<iostream>
-#include<vector>
-#include<string>
-#include<filesystem>
-
-using FilePath = std::filesystem::path;
+#include "common_types.h"
+#include <iostream>
+#include <vector>
+#include <string>
+#include <filesystem>
+#ifdef _WIN32
+#include "windows_shortcut_creator.h"
+#endif
 
 class FileSystemOrganizer
 {
@@ -14,7 +16,7 @@ private:
     FilePath repo_path_; // 存储仓库的绝对路径
 
 public:
-    FileSystemOrganizer(const FilePath& path);
+    FileSystemOrganizer(const FilePath &path);
     ~FileSystemOrganizer() = default;
 
     void create_category_dirs(const std::vector<std::string> &category_names);
