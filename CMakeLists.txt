@@ -9,7 +9,9 @@ include_directories(./include)
 
 #add_executable(main src/main.cpp src/file_manager.cpp)
 
-#add_executable(basic_test1 test/basic_test1.cpp src/file_manager.cpp)
+#add_executable(file_manager_test1 test/file_manager_test1.cpp src/file_manager.cpp)
+
+add_executable(file_manager_test2 test/file_manager_test2.cpp src/file_manager.cpp)
 
 # add_executable(organizer_test1 test/organizer_test1.cpp src/file_system_organizer.cpp src/windows_shortcut_creator.cpp)
 # if(WIN32)
@@ -21,5 +23,6 @@ include_directories(./include)
 #     target_link_libraries(windows_shortcut_creator_test1 PRIVATE ole32 shell32)
 # endif()
 
-add_executable(serializer_test1 test/serializer_test1.cpp src/serializer.cpp)
+#add_executable(serializer_test1 test/serializer_test1.cpp src/serializer.cpp)
+
 

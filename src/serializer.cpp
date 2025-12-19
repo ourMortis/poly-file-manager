@@ -46,6 +46,7 @@ json Serializer::file_to_json() const
     }
     json j;
     ifs >> j;
+    ifs.close();
     return j;
 }
 
@@ -66,6 +67,7 @@ bool Serializer::serialize_to_file(const FileTagData &data) const
         return false;
     }
     ofs << j;
+    ofs.close();
 
 #ifdef _WIN32
     if (std::filesystem::is_regular_file(config))

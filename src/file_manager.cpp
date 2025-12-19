@@ -11,7 +11,10 @@ FileManager::FileManager(const FileTagData& data)
         create_path(path_index.first);
         for(const auto& index : path_index.second)
         {
-            assign_tag_to_path(path_index.first, data.index_to_tag[index]);
+            if(index < data.index_to_tag.size())
+            {
+                assign_tag_to_path(path_index.first, data.index_to_tag[index]);
+            }
         }
     }
 }
@@ -193,20 +196,21 @@ FileTagData FileManager::get_file_tag_data() const
 {
     FileTagData data;
     std::map<FileTag, int> hash;
-    
+    int i = 0;
     for(const auto& tag : tag_registry_ | std::views::keys)
     {
-        int i = 0;
         data.index_to_tag.push_back(tag);
         hash[tag] = i++;
     }
     for(const auto& pathptr_tagptrs : path_to_tags_map_)
     {
+        data.path_to_index_map[*(pathptr_tagptrs.first)];
         for(const auto& tag_ptr : pathptr_tagptrs.second)
         {
             data.path_to_index_map[*(pathptr_tagptrs.first)].push_back(hash[*tag_ptr]);
         }
     }
+    return data;
 }
 
 // ==================== 调试输出 ====================
