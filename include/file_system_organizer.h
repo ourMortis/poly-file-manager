@@ -2,20 +2,20 @@
 #define FILE_SYSTEM_ORGANIZER_H
 
 #include "common_types.h"
-#include <iostream>
-#include <vector>
-#include <string>
 #include <filesystem>
+#include <string>
+#include <vector>
+
 #ifdef _WIN32
 #include "windows_shortcut_creator.h"
 #endif
 
 class FileSystemOrganizer
 {
-private:
+  private:
     FilePath repo_path_; // 存储仓库的绝对路径
 
-public:
+  public:
     FileSystemOrganizer(const FilePath &path);
     ~FileSystemOrganizer() = default;
 

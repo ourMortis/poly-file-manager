@@ -1,33 +1,39 @@
 #include "serializer.h"
-#include <iostream>
 #include <cassert>
 #include <filesystem>
-#include <vector>
+#include <iostream>
 #include <map>
 #include <stdexcept>
+#include <vector>
+
 
 // 辅助函数：清理测试生成的配置文件
-void clean_test_file(const std::filesystem::path& repo_path, const std::string& config_file) {
+void clean_test_file(const std::filesystem::path &repo_path, const std::string &config_file)
+{
     std::filesystem::path file_path = repo_path / config_file;
-    if (std::filesystem::exists(file_path)) {
+    if (std::filesystem::exists(file_path))
+    {
         std::filesystem::remove(file_path);
     }
 }
 
 // 辅助函数：确保指定目录存在（用于测试环境准备）
-bool ensure_directory_exists(const std::filesystem::path& dir_path) {
-    if (!std::filesystem::exists(dir_path)) {
+bool ensure_directory_exists(const std::filesystem::path &dir_path)
+{
+    if (!std::filesystem::exists(dir_path))
+    {
         return std::filesystem::create_directories(dir_path);
     }
     return std::filesystem::is_directory(dir_path);
 }
 
-int main() {
+int main()
+{
     std::cout << "开始测试修改后的 Serializer 类..." << std::endl;
 
     // ========== 测试配置 ==========
     const std::filesystem::path test_repo_path = "D:/project1"; // 指定的仓库路径
-    const std::string config_file = ".poly_file_manager";      // 配置文件名
+    const std::string config_file = ".poly_file_manager";       // 配置文件名
 
     // 提前确保测试目录存在（如果不存在则创建）
     assert(ensure_directory_exists(test_repo_path) && "测试目录D:/project创建/存在失败，请检查权限");
@@ -35,10 +41,13 @@ int main() {
     // ========== 1. 测试构造函数的合法性校验 ==========
     std::cout << "测试：构造函数-非绝对路径校验..." << std::endl;
     bool throw_non_absolute = false;
-    try {
+    try
+    {
         // 传入相对路径，预期抛出异常
         Serializer bad_serializer1("./relative_path");
-    } catch (const std::invalid_argument& e) {
+    }
+    catch (const std::invalid_argument &e)
+    {
         throw_non_absolute = true;
         std::cout << "捕获到预期异常：" << e.what() << std::endl;
     }
@@ -47,11 +56,14 @@ int main() {
 
     std::cout << "测试：构造函数-非目录路径校验..." << std::endl;
     bool throw_non_directory = false;
-    try {
+    try
+    {
         // 传入一个不存在的文件路径（非目录），预期抛出异常
         std::filesystem::path non_dir_path = "D:/non_exist_file.txt";
         Serializer bad_serializer2(non_dir_path);
-    } catch (const std::invalid_argument& e) {
+    }
+    catch (const std::invalid_argument &e)
+    {
         throw_non_directory = true;
         std::cout << "捕获到预期异常：" << e.what() << std::endl;
     }
@@ -124,7 +136,8 @@ int main() {
     // ========== 9. 清理测试资源 ==========
     clean_test_file(test_repo_path, config_file);
     // 可选：清理临时创建的新目录（如果为空）
-    if (std::filesystem::exists(new_repo_path) && std::filesystem::is_empty(new_repo_path)) {
+    if (std::filesystem::exists(new_repo_path) && std::filesystem::is_empty(new_repo_path))
+    {
         std::filesystem::remove(new_repo_path);
     }
 

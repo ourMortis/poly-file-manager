@@ -29,12 +29,7 @@ bool ShortcutCreator::create(const std::filesystem::path &targetPath, const std:
     IPersistFile *pPersistFile = nullptr;
 
     // 创建IShellLink接口实例
-    hr = CoCreateInstance(
-        CLSID_ShellLink,
-        nullptr,
-        CLSCTX_INPROC_SERVER,
-        IID_IShellLinkW,
-        (void **)&pShellLink);
+    hr = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (void **)&pShellLink);
     if (SUCCEEDED(hr))
     {
         // 设置目标路径（核心，必须）

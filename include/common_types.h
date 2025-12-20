@@ -1,19 +1,18 @@
 #ifndef COMMON_TYPES_H
 #define COMMON_TYPES_H
 
-#include <string>
+#include "json.hpp"
 #include <filesystem>
-#include <vector>
 #include <map>
+#include <string>
+#include <vector>
+
 
 using FileTag = std::string;
 using FilePath = std::filesystem::path;
 using FileTagPtr = std::shared_ptr<FileTag>;
 using FilePathPtr = std::shared_ptr<FilePath>;
-
-#ifdef SERIALIZER_H
 using json = nlohmann::json;
-#endif
 
 struct FileTagData
 {

@@ -12,22 +12,18 @@ Serializer::Serializer(const FilePath &repo_path)
 #ifdef _WIN32
 bool Serializer::set_file_hidden(const std::filesystem::path &path) const
 {
-    return SetFileAttributesW(path.wstring().c_str(), GetFileAttributesW(path.wstring().c_str()) | FILE_ATTRIBUTE_HIDDEN) != 0;
+    return SetFileAttributesW(path.wstring().c_str(),
+                              GetFileAttributesW(path.wstring().c_str()) | FILE_ATTRIBUTE_HIDDEN) != 0;
 }
 bool Serializer::remove_file_hidden(const std::filesystem::path &path) const
 {
-    return SetFileAttributesW(path.wstring().c_str(), GetFileAttributesW(path.wstring().c_str()) & ~FILE_ATTRIBUTE_HIDDEN) != 0;
+    return SetFileAttributesW(path.wstring().c_str(),
+                              GetFileAttributesW(path.wstring().c_str()) & ~FILE_ATTRIBUTE_HIDDEN) != 0;
 }
 #endif
 
-void Serializer::set_repo_path(FilePath path)
-{
-    repo_path_ = path;
-}
-FilePath Serializer::get_repo_path() const
-{
-    return repo_path_;
-}
+void Serializer::set_repo_path(FilePath path) { repo_path_ = path; }
+FilePath Serializer::get_repo_path() const { return repo_path_; }
 
 json Serializer::data_to_json(const FileTagData &data) const
 {

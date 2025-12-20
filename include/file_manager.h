@@ -4,16 +4,13 @@
 #include "common_types.h"
 #include <iostream>
 #include <map>
+#include <ranges>
 #include <set>
 #include <vector>
-#include <string>
-#include <filesystem>
-#include <algorithm>
-#include <ranges>
 
 class FileManager
 {
-private:
+  private:
     // 主注册表
     std::map<FileTag, FileTagPtr> tag_registry_;    // 存储所有标签
     std::map<FilePath, FilePathPtr> path_registry_; // 存储所有路径
@@ -22,7 +19,7 @@ private:
     std::map<FileTagPtr, std::set<FilePathPtr>> tag_to_paths_map_; // 标签到路径的映射
     std::map<FilePathPtr, std::set<FileTagPtr>> path_to_tags_map_; // 路径到标签的映射
 
-public:
+  public:
     FileManager() = default;
     FileManager(const FileTagData &data);
     ~FileManager() = default;
@@ -55,7 +52,7 @@ public:
     void dump_paths() const;
     void dump_path_tags() const;
 
-private:
+  private:
     // 内部辅助函数
     FileTagPtr get_or_create_tag_ptr(const FileTag &tag);
     FilePathPtr get_or_create_path_ptr(const FilePath &path);

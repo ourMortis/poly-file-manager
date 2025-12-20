@@ -1,7 +1,8 @@
 # Build and settings
 build/
 .vscode/
-
+.cache
+.clang-format
 # Prerequisites
 *.d
 

@@ -1,13 +1,10 @@
 #ifndef SERIALIZER_H
 #define SERIALIZER_H
 
-#include "common_types.h"
 #include <string>
 #include <filesystem>
-#include <vector>
-#include <map>
 #include <fstream>
-#include "json.hpp"
+#include "common_types.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
