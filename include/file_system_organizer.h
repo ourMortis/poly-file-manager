@@ -20,13 +20,13 @@ class FileSystemOrganizer
     ~FileSystemOrganizer() = default;
 
     void create_category_dirs(const std::vector<std::string> &category_names);
-    void remove_category_dir(const std::string &category_name);
-    void rename_category_dir(const std::string &old_name, const std::string &new_name);
+    int remove_category_dir(const std::string &category_name);
+    bool rename_category_dir(const std::string &old_name, const std::string &new_name);
 
-    void create_symlink_in_category(const std::string &category_name, const std::vector<FilePath> &paths);
-    void create_symlink_in_category(const std::string &category_name, const FilePath &path);
-    void remove_symlink_in_category(const std::string &category_name, const std::vector<FilePath> &paths);
-    void remove_symlink_in_category(const std::string &category_name, const FilePath &path);
+    int create_symlink_in_category(const std::string &category_name, const std::vector<FilePath> &paths);
+    bool create_symlink_in_category(const std::string &category_name, const FilePath &path);
+    int remove_symlink_in_category(const std::string &category_name, const std::vector<FilePath> &paths);
+    bool remove_symlink_in_category(const std::string &category_name, const FilePath &path);
 
     FilePath get_repo_path() const;
     FilePath get_symlink_path(const std::string &category_name, const FilePath &target_path);

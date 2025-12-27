@@ -1,4 +1,5 @@
 #include "file_manager.h"
+#include "common_types.h"
 
 FileManager::FileManager(const FileTagData &data)
 {
@@ -73,6 +74,11 @@ std::vector<FileTag> FileManager::get_all_tags() const
     return tags;
 }
 
+int FileManager::get_size_of_tags() const
+{
+    return tag_registry_.size();    
+}
+
 // ==================== 路径管理 ====================
 void FileManager::create_path(const FilePath &path)
 {
@@ -125,6 +131,11 @@ std::vector<FilePath> FileManager::get_all_paths() const
     std::transform(path_registry_.begin(), path_registry_.end(), std::back_inserter(paths),
                    [](const auto &pair) { return pair.first; });
     return paths;
+}
+
+int FileManager::get_size_of_paths() const
+{
+    return path_registry_.size();
 }
 
 // ==================== 标签-路径关联管理 ====================
@@ -198,6 +209,28 @@ std::set<FilePath> FileManager::get_paths_with_tag(const FileTag &tag) const
     }
 
     return paths;
+}
+int FileManager::get_size_of_tags_for_path(const FilePath &path) const
+{
+    auto sptr_it = path_registry_.find(path);
+    if (sptr_it == path_registry_.end())
+    {
+        return 0;
+    }
+    auto it = path_to_tags_map_.find(sptr_it->second);
+
+    return it->second.size();
+}
+int FileManager::get_size_of_paths_with_tag(const FileTag &tag) const
+{
+    auto sptr_it = tag_registry_.find(tag);
+    if (sptr_it == tag_registry_.end())
+    {
+        return 0;
+    }
+    auto it = tag_to_paths_map_.find(sptr_it->second);
+
+    return it->second.size();
 }
 
 FileTagData FileManager::get_file_tag_data() const

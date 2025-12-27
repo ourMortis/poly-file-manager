@@ -1,4 +1,6 @@
 #include "file_system_organizer.h"
+#include <cmath>
+#include <filesystem>
 
 FileSystemOrganizer::FileSystemOrganizer(const FilePath &path)
 {
@@ -34,50 +36,64 @@ void FileSystemOrganizer::create_category_dirs(const std::vector<std::string> &c
     }
 }
 
-void FileSystemOrganizer::remove_category_dir(const std::string &category_name)
+int FileSystemOrganizer::remove_category_dir(const std::string &category_name)
 {
-    std::filesystem::remove_all(repo_path_ / category_name);
+    return std::filesystem::remove_all(repo_path_ / category_name);
 }
 
-void FileSystemOrganizer::rename_category_dir(const std::string &old_name, const std::string &new_name)
+bool FileSystemOrganizer::rename_category_dir(const std::string &old_name, const std::string &new_name)
 {
     std::filesystem::rename(repo_path_ / old_name, repo_path_ / new_name);
+    if (std::filesystem::is_directory(repo_path_ / new_name) && !std::filesystem::exists(repo_path_ / old_name))
+    {
+        return true;
+    }
+    return false;
 }
 
-void FileSystemOrganizer::create_symlink_in_category(const std::string &category_name,
+int FileSystemOrganizer::create_symlink_in_category(const std::string &category_name,
                                                      const std::vector<FilePath> &paths)
 {
+    int cnt = 0;
     for (const auto &path : paths)
     {
-        create_symlink_in_category(category_name, path);
+        if (!create_symlink_in_category(category_name, path))
+        {
+            return cnt;
+        }
+        cnt++;
     }
+    return cnt;
 }
 
-void FileSystemOrganizer::create_symlink_in_category(const std::string &category_name, const FilePath &path)
+bool FileSystemOrganizer::create_symlink_in_category(const std::string &category_name, const FilePath &path)
 {
 #ifdef _WIN32
     ShortcutCreator creator;
-    if (!creator.create(path, get_symlink_path(category_name, path)))
-    {
-        throw std::runtime_error("Failed to create shortcut: " + get_symlink_path(category_name, path).string());
-    }
+    return creator.create(path, get_symlink_path(category_name, path));
 #else
     std::filesystem::create_directory_symlink(path, get_symlink_path(category_name, path));
 #endif
 }
 
-void FileSystemOrganizer::remove_symlink_in_category(const std::string &category_name,
+int FileSystemOrganizer::remove_symlink_in_category(const std::string &category_name,
                                                      const std::vector<FilePath> &paths)
 {
+    int cnt = 0;
     for (auto path : paths)
     {
-        remove_symlink_in_category(category_name, path);
+        if (!remove_symlink_in_category(category_name, path))
+        {
+            return cnt;
+        }
+        cnt++;
     }
+    return cnt;
 }
 
-void FileSystemOrganizer::remove_symlink_in_category(const std::string &category_name, const FilePath &path)
+bool FileSystemOrganizer::remove_symlink_in_category(const std::string &category_name, const FilePath &path)
 {
-    std::filesystem::remove(get_symlink_path(category_name, path));
+    return std::filesystem::remove(get_symlink_path(category_name, path));
 }
 
 FilePath FileSystemOrganizer::get_repo_path() const { return repo_path_; }
