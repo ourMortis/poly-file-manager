@@ -68,6 +68,10 @@ int FileManager::create_symlink_in_category(const std::string &category_name,
 
 bool FileManager::create_symlink_in_category(const std::string &category_name, const FilePath &path)
 {
+    if (!std::filesystem::is_directory(repo_path_ / category_name))
+    {
+        create_category_dirs({category_name});
+    }
 #ifdef _WIN32
     ShortcutCreator creator;
     return creator.create(path, get_symlink_path(category_name, path));

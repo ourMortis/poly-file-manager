@@ -22,7 +22,7 @@ PolyFileManager::PolyFileManager(const std::filesystem::path &repo_path, bool)
 PolyFileManager::PolyFileManager(const std::filesystem::path &repo_path)
     :PolyFileManager(repo_path, true)
 {
-    if (!repo_path_invalid(repo_path))
+    if (repo_path_invalid(repo_path))
     {
         throw std::invalid_argument("PolyFileManager: invalid repo_path");
     }

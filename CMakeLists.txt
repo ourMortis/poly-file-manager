@@ -26,6 +26,6 @@ endif()
 add_executable(serializer_test1 test/serializer_test1.cpp src/serializer.cpp)
 
 if(WIN32)
-add_executable(poly_file_manager_test1 test/poly_file_manager_test1.cpp src/poly_file_manager.cpp src/data_manager src/file_manager src/serializer src/windows_shortcut_creator)
-    target_link_libraries(windows_shortcut_creator_test1 PRIVATE ole32 shell32)
+add_executable(poly_file_manager_test1 test/poly_file_manager_test1.cpp src/poly_file_manager.cpp src/data_manager.cpp src/file_manager.cpp src/serializer.cpp src/windows_shortcut_creator.cpp)
+    target_link_libraries(poly_file_manager_test1 PRIVATE ole32 shell32)
 endif()
