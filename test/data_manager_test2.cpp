@@ -1,4 +1,4 @@
-#include "file_manager.h"
+#include "data_manager.hpp"
 
 int main()
 {
@@ -7,10 +7,7 @@ int main()
     data.path_to_index_map = {
         {"path1", {1, 2}}, {"path2", {0, 1, 2, 3, 4}}, {"path3", {}}, {"path4", {2}}, {"path5", {5}}};
 
-    FileManager fm(data);
-
-    fm.dump_path_tags();
-    fm.dump_tags();
+    DataManager fm(data);
 
     FileTagData fm_data = fm.get_file_tag_data();
 

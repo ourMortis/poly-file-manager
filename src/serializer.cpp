@@ -1,4 +1,4 @@
-#include "serializer.h"
+#include "serializer.hpp"
 
 Serializer::Serializer(const FilePath &repo_path)
 {

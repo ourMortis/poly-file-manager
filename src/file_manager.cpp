@@ -1,345 +1,110 @@
-#include "file_manager.h"
-#include "common_types.h"
+#include "file_manager.hpp"
+#include <cmath>
+#include <filesystem>
 
-FileManager::FileManager(const FileTagData &data)
+FileManager::FileManager(const FilePath &path)
 {
-    for (const auto &tag : data.index_to_tag)
+    if (!path.is_absolute() || !std::filesystem::is_directory(path))
     {
-        create_tag(tag);
+        throw std::invalid_argument("Path is not absolute or not a dirctory: " + path.string());
     }
-    for (const auto &path_index : data.path_to_index_map)
+    repo_path_ = path;
+}
+
+FilePath FileManager::get_symlink_path(const std::string &category_name, const FilePath &target_path)
+{
+#ifdef _WIN32
+    FilePath symlink_path = repo_path_ / category_name /
+                            (target_path.filename().empty() ? target_path.parent_path().filename().string() + ".lnk"
+                                                            : target_path.filename().string() + ".lnk");
+#else
+    FilePath symlink_path =
+        repo_path_ / category_name /
+        (target_path.filename().empty() ? target_path.parent_path().filename() : target_path.filename());
+#endif
+    return symlink_path;
+}
+
+void FileManager::create_category_dirs(const std::vector<std::string> &category_names)
+{
+    for (const auto &name : category_names)
     {
-        create_path(path_index.first);
-        for (const auto &index : path_index.second)
+        if (!std::filesystem::create_directory(repo_path_ / name))
         {
-            if (index < data.index_to_tag.size())
-            {
-                assign_tag_to_path(path_index.first, data.index_to_tag[index]);
-            }
+            throw std::runtime_error("Failed to create directory '" + (repo_path_ / name).string());
         }
     }
 }
 
-// ==================== 标签管理 ====================
-void FileManager::create_tag(const FileTag &tag)
+int FileManager::remove_category_dir(const std::string &category_name)
 {
-    auto it = tag_registry_.find(tag);
-    if (it != tag_registry_.end())
-        return;
-
-    tag_registry_[tag] = std::make_shared<FileTag>(tag);
-    tag_to_paths_map_[tag_registry_[tag]]; // 创建空集合
+    return std::filesystem::remove_all(repo_path_ / category_name);
 }
 
-void FileManager::rename_tag(const FileTag &old_tag, const FileTag &new_tag)
+bool FileManager::rename_category_dir(const std::string &old_name, const std::string &new_name)
 {
-    auto it = tag_registry_.find(old_tag);
-    if (it == tag_registry_.end())
-        return;
-
-    auto tag_ptr = std::move(it->second);
-    *tag_ptr = new_tag;
-
-    tag_registry_.erase(it);
-    tag_registry_.emplace(*tag_ptr, std::move(tag_ptr));
-}
-
-void FileManager::remove_tag(const FileTag &tag)
-{
-    auto it = tag_registry_.find(tag);
-    if (it == tag_registry_.end())
-        return;
-
-    auto tag_ptr = it->second;
-
-    // 从所有关联的路径中移除该标签
-    if (auto path_set_it = tag_to_paths_map_.find(tag_ptr); path_set_it != tag_to_paths_map_.end())
+    std::filesystem::rename(repo_path_ / old_name, repo_path_ / new_name);
+    if (std::filesystem::is_directory(repo_path_ / new_name) && !std::filesystem::exists(repo_path_ / old_name))
     {
-        for (auto path_ptr : path_set_it->second)
-        {
-            path_to_tags_map_[path_ptr].erase(tag_ptr);
-        }
-        tag_to_paths_map_.erase(tag_ptr);
+        return true;
     }
-
-    tag_registry_.erase(it);
+    return false;
 }
 
-std::vector<FileTag> FileManager::get_all_tags() const
+int FileManager::create_symlink_in_category(const std::string &category_name,
+                                                     const std::vector<FilePath> &paths)
 {
-    std::vector<FileTag> tags;
-    tags.reserve(tag_registry_.size());
-    std::transform(tag_registry_.begin(), tag_registry_.end(), std::back_inserter(tags),
-                   [](const auto &pair) { return pair.first; });
-    return tags;
-}
-
-int FileManager::get_size_of_tags() const
-{
-    return tag_registry_.size();    
-}
-
-// ==================== 路径管理 ====================
-void FileManager::create_path(const FilePath &path)
-{
-    auto it = path_registry_.find(path);
-    if (it != path_registry_.end())
-        return;
-
-    path_registry_[path] = std::make_shared<FilePath>(path);
-    path_to_tags_map_[path_registry_[path]]; // 创建空集合
-}
-
-void FileManager::rename_path(const FilePath &old_path, const FilePath &new_path)
-{
-    auto it = path_registry_.find(old_path);
-    if (it == path_registry_.end())
-        return;
-
-    auto path_ptr = std::move(it->second);
-    *path_ptr = new_path;
-
-    path_registry_.erase(it);
-    path_registry_.emplace(*path_ptr, std::move(path_ptr));
-}
-
-void FileManager::remove_path(const FilePath &path)
-{
-    auto it = path_registry_.find(path);
-    if (it == path_registry_.end())
-        return;
-
-    auto path_ptr = it->second;
-
-    // 从所有关联的标签中移除该路径
-    if (auto tag_set_it = path_to_tags_map_.find(path_ptr); tag_set_it != path_to_tags_map_.end())
+    int cnt = 0;
+    for (const auto &path : paths)
     {
-        for (auto tag_ptr : tag_set_it->second)
+        if (!create_symlink_in_category(category_name, path))
         {
-            tag_to_paths_map_[tag_ptr].erase(path_ptr);
+            return cnt;
         }
-        path_to_tags_map_.erase(path_ptr);
+        cnt++;
     }
-
-    path_registry_.erase(it);
+    return cnt;
 }
 
-std::vector<FilePath> FileManager::get_all_paths() const
+bool FileManager::create_symlink_in_category(const std::string &category_name, const FilePath &path)
+{
+#ifdef _WIN32
+    ShortcutCreator creator;
+    return creator.create(path, get_symlink_path(category_name, path));
+#else
+    std::filesystem::create_directory_symlink(path, get_symlink_path(category_name, path));
+    return true;
+#endif
+}
+
+int FileManager::remove_symlink_in_category(const std::string &category_name,
+                                                     const std::vector<FilePath> &paths)
+{
+    int cnt = 0;
+    for (auto path : paths)
+    {
+        if (!remove_symlink_in_category(category_name, path))
+        {
+            return cnt;
+        }
+        cnt++;
+    }
+    return cnt;
+}
+
+bool FileManager::remove_symlink_in_category(const std::string &category_name, const FilePath &path)
+{
+    return std::filesystem::remove(get_symlink_path(category_name, path));
+}
+
+FilePath FileManager::get_repo_path() const { return repo_path_; }
+
+std::vector<FilePath> FileManager::get_symlinks_in_category(const std::string &category_name)
 {
     std::vector<FilePath> paths;
-    paths.reserve(path_registry_.size());
-    std::transform(path_registry_.begin(), path_registry_.end(), std::back_inserter(paths),
-                   [](const auto &pair) { return pair.first; });
+    for (const auto &entry : std::filesystem::directory_iterator(repo_path_ / category_name))
+    {
+        paths.push_back(entry.path());
+    }
     return paths;
-}
-
-int FileManager::get_size_of_paths() const
-{
-    return path_registry_.size();
-}
-
-// ==================== 标签-路径关联管理 ====================
-void FileManager::assign_tag_to_path(const FilePath &path, const FileTag &tag)
-{
-    // 确保路径和标签都存在
-    auto path_ptr = get_or_create_path_ptr(path);
-    auto tag_ptr = get_or_create_tag_ptr(tag);
-
-    // 建立双向关联
-    path_to_tags_map_[path_ptr].insert(tag_ptr);
-    tag_to_paths_map_[tag_ptr].insert(path_ptr);
-}
-
-void FileManager::remove_tag_from_path(const FilePath &path, const FileTag &tag)
-{
-    auto path_ptr = find_path_ptr(path);
-    if (!path_ptr)
-        return;
-
-    auto tag_ptr = find_tag_ptr(tag);
-    if (!tag_ptr)
-        return;
-
-    // 移除双向关联
-    if (auto path_tags_it = path_to_tags_map_.find(path_ptr); path_tags_it != path_to_tags_map_.end())
-    {
-        path_tags_it->second.erase(tag_ptr);
-    }
-
-    if (auto tag_paths_it = tag_to_paths_map_.find(tag_ptr); tag_paths_it != tag_to_paths_map_.end())
-    {
-        tag_paths_it->second.erase(path_ptr);
-    }
-}
-
-// ==================== 查询操作 ====================
-std::set<FileTag> FileManager::get_tags_for_path(const FilePath &path) const
-{
-    std::set<FileTag> tags;
-    auto path_ptr = find_path_ptr(path);
-
-    if (path_ptr)
-    {
-        if (auto it = path_to_tags_map_.find(path_ptr); it != path_to_tags_map_.end())
-        {
-            for (const auto &tag_ptr : it->second)
-            {
-                tags.insert(*tag_ptr);
-            }
-        }
-    }
-
-    return tags;
-}
-
-std::set<FilePath> FileManager::get_paths_with_tag(const FileTag &tag) const
-{
-    std::set<FilePath> paths;
-    auto tag_ptr = find_tag_ptr(tag);
-
-    if (tag_ptr)
-    {
-        if (auto it = tag_to_paths_map_.find(tag_ptr); it != tag_to_paths_map_.end())
-        {
-            for (const auto &path_ptr : it->second)
-            {
-                paths.insert(*path_ptr);
-            }
-        }
-    }
-
-    return paths;
-}
-int FileManager::get_size_of_tags_for_path(const FilePath &path) const
-{
-    auto sptr_it = path_registry_.find(path);
-    if (sptr_it == path_registry_.end())
-    {
-        return 0;
-    }
-    auto it = path_to_tags_map_.find(sptr_it->second);
-
-    return it->second.size();
-}
-int FileManager::get_size_of_paths_with_tag(const FileTag &tag) const
-{
-    auto sptr_it = tag_registry_.find(tag);
-    if (sptr_it == tag_registry_.end())
-    {
-        return 0;
-    }
-    auto it = tag_to_paths_map_.find(sptr_it->second);
-
-    return it->second.size();
-}
-
-FileTagData FileManager::get_file_tag_data() const
-{
-    FileTagData data;
-    std::map<FileTag, int> hash;
-    int i = 0;
-    for (const auto &tag : tag_registry_ | std::views::keys)
-    {
-        data.index_to_tag.push_back(tag);
-        hash[tag] = i++;
-    }
-    for (const auto &pathptr_tagptrs : path_to_tags_map_)
-    {
-        data.path_to_index_map[*(pathptr_tagptrs.first)];
-        for (const auto &tag_ptr : pathptr_tagptrs.second)
-        {
-            data.path_to_index_map[*(pathptr_tagptrs.first)].push_back(hash[*tag_ptr]);
-        }
-    }
-    return data;
-}
-
-// ==================== 调试输出 ====================
-void FileManager::dump_tags() const
-{
-    std::cout << "=========== Tags Registry ===========\n";
-    for (const auto &[tag, ptr] : tag_registry_)
-    {
-        std::cout << "Tag: \"" << tag << "\" [Ptr: " << ptr << "]\n";
-    }
-    std::cout << "=====================================\n";
-}
-
-void FileManager::dump_tag_assignments() const
-{
-    std::cout << "======= Tag to Path Assignments =======\n";
-    for (const auto &[tag_ptr, path_set] : tag_to_paths_map_)
-    {
-        std::cout << "Tag: \"" << *tag_ptr << "\" -> Paths: ";
-        for (const auto &path_ptr : path_set)
-        {
-            std::cout << path_ptr->string() << ", ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << "=======================================\n";
-}
-
-void FileManager::dump_paths() const
-{
-    std::cout << "========== Paths Registry ==========\n";
-    for (const auto &[path, ptr] : path_registry_)
-    {
-        std::cout << "Path: \"" << path.string() << "\" [Ptr: " << ptr << "]\n";
-    }
-    std::cout << "====================================\n";
-}
-
-void FileManager::dump_path_tags() const
-{
-    std::cout << "======= Path to Tag Assignments =======\n";
-    for (const auto &[path_ptr, tag_set] : path_to_tags_map_)
-    {
-        std::cout << "Path: \"" << path_ptr->string() << "\" -> Tags: ";
-        for (const auto &tag_ptr : tag_set)
-        {
-            std::cout << *tag_ptr << ", ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << "=======================================\n";
-}
-
-// ==================== 内部辅助函数 ====================
-FileTagPtr FileManager::get_or_create_tag_ptr(const FileTag &tag)
-{
-    auto it = tag_registry_.find(tag);
-    if (it != tag_registry_.end())
-    {
-        return it->second;
-    }
-
-    // 标签不存在，创建它
-    create_tag(tag);
-    return tag_registry_[tag];
-}
-
-FilePathPtr FileManager::get_or_create_path_ptr(const FilePath &path)
-{
-    auto it = path_registry_.find(path);
-    if (it != path_registry_.end())
-    {
-        return it->second;
-    }
-
-    // 路径不存在，创建它
-    create_path(path);
-    return path_registry_[path];
-}
-
-FileTagPtr FileManager::find_tag_ptr(const FileTag &tag) const
-{
-    auto it = tag_registry_.find(tag);
-    return (it != tag_registry_.end()) ? it->second : nullptr;
-}
-
-FilePathPtr FileManager::find_path_ptr(const FilePath &path) const
-{
-    auto it = path_registry_.find(path);
-    return (it != path_registry_.end()) ? it->second : nullptr;
 }

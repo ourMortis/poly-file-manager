@@ -4,7 +4,7 @@
 #include <string>
 #include <filesystem>
 #include <fstream>
-#include "common_types.h"
+#include "common_types.hpp"
 #ifdef _WIN32
 #include <windows.h>
 #endif

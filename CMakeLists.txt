@@ -9,18 +9,23 @@ include_directories(./include)
 
 add_executable(main src/main.cpp src/file_manager.cpp)
 
-add_executable(file_manager_test1 test/file_manager_test1.cpp src/file_manager.cpp)
+add_executable(data_manager_test1 test/data_manager_test1.cpp src/data_manager.cpp)
 
-add_executable(file_manager_test2 test/file_manager_test2.cpp src/file_manager.cpp)
+add_executable(data_manager_test2 test/data_manager_test2.cpp src/data_manager.cpp)
 
-add_executable(organizer_test1 test/organizer_test1.cpp src/file_system_organizer.cpp src/windows_shortcut_creator.cpp)
-  if(WIN32)
-     target_link_libraries(organizer_test1 PRIVATE ole32 shell32)
-  endif()
+if(WIN32)
+add_executable(file_manager_test1 test/file_manager_test1.cpp src/file_manager.cpp src/windows_shortcut_creator.cpp)
+    target_link_libraries(file_manager_test1 PRIVATE ole32 shell32)
+endif()
 
- add_executable(windows_shortcut_creator_test1 test/windows_shortcut_creator_test1.cpp src/windows_shortcut_creator.cpp)
- if(WIN32)
-     target_link_libraries(windows_shortcut_creator_test1 PRIVATE ole32 shell32)
- endif()
+if(WIN32)
+add_executable(windows_shortcut_creator_test1 test/windows_shortcut_creator_test1.cpp src/windows_shortcut_creator.cpp)
+    target_link_libraries(windows_shortcut_creator_test1 PRIVATE ole32 shell32)
+endif()
 
- add_executable(serializer_test1 test/serializer_test1.cpp src/serializer.cpp)
+add_executable(serializer_test1 test/serializer_test1.cpp src/serializer.cpp)
+
+if(WIN32)
+add_executable(poly_file_manager_test1 test/poly_file_manager_test1.cpp src/poly_file_manager.cpp src/data_manager src/file_manager src/serializer src/windows_shortcut_creator)
+    target_link_libraries(windows_shortcut_creator_test1 PRIVATE ole32 shell32)
+endif()

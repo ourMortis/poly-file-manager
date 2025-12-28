@@ -1,4 +1,4 @@
-#include "windows_shortcut_creator.h"
+#include "windows_shortcut_creator.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
