@@ -29,3 +29,8 @@ if(WIN32)
 add_executable(poly_file_manager_test1 test/poly_file_manager_test1.cpp src/poly_file_manager.cpp src/data_manager.cpp src/file_manager.cpp src/serializer.cpp src/windows_shortcut_creator.cpp)
     target_link_libraries(poly_file_manager_test1 PRIVATE ole32 shell32)
 endif()
+
+if(WIN32)
+add_executable(poly_file_manager_cli src/poly_file_manager_cli.cpp src/poly_file_manager.cpp src/data_manager.cpp src/file_manager.cpp src/serializer.cpp src/windows_shortcut_creator.cpp)
+    target_link_libraries(poly_file_manager_test1 PRIVATE ole32 shell32)
+endif()
