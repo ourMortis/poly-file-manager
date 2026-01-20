@@ -24,8 +24,8 @@ public:
     Serializer(const FilePath &repo_path);
     ~Serializer() = default;
 
-    void set_repo_path(FilePath path);
-    FilePath get_repo_path() const;
+    void set_repo_path(FilePath path) noexcept;
+    FilePath get_repo_path() const noexcept;
 
     json data_to_json(const FileTagData &data) const;
 

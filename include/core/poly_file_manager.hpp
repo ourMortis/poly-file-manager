@@ -25,7 +25,7 @@ class PolyFileManager
     explicit PolyFileManager(const std::filesystem::path &repo_path);
     ~PolyFileManager() = default;
 
-    std::filesystem::path get_repo_path() const;
+    std::filesystem::path get_repo_path() const noexcept;
 
     void add_path(const FilePath &path);
     /// @returns The number of renamed symbolic links or shortcuts on Windows

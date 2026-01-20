@@ -43,7 +43,7 @@ void DataManager::rename_tag(const FileTag &old_tag, const FileTag &new_tag)
     tag_registry_.emplace(*tag_ptr, std::move(tag_ptr));
 }
 
-void DataManager::remove_tag(const FileTag &tag)
+void DataManager::remove_tag(const FileTag &tag) noexcept
 {
     auto it = tag_registry_.find(tag);
     if (it == tag_registry_.end())
@@ -72,7 +72,7 @@ std::vector<FileTag> DataManager::get_all_tags() const
     return tags;
 }
 
-int DataManager::get_size_of_tags() const
+int DataManager::get_size_of_tags() const noexcept
 {
     return tag_registry_.size();    
 }
@@ -100,7 +100,7 @@ void DataManager::rename_path(const FilePath &old_path, const FilePath &new_path
     path_registry_.emplace(*path_ptr, std::move(path_ptr));
 }
 
-void DataManager::remove_path(const FilePath &path)
+void DataManager::remove_path(const FilePath &path) noexcept
 {
     auto it = path_registry_.find(path);
     if (it == path_registry_.end())
@@ -129,7 +129,7 @@ std::vector<FilePath> DataManager::get_all_paths() const
     return paths;
 }
 
-int DataManager::get_size_of_paths() const
+int DataManager::get_size_of_paths() const noexcept
 {
     return path_registry_.size();
 }
@@ -201,7 +201,7 @@ std::set<FilePath> DataManager::get_paths_with_tag(const FileTag &tag) const
 
     return paths;
 }
-int DataManager::get_size_of_tags_for_path(const FilePath &path) const
+int DataManager::get_size_of_tags_for_path(const FilePath &path) const noexcept
 {
     auto sptr_it = path_registry_.find(path);
     if (sptr_it == path_registry_.end())
@@ -212,7 +212,7 @@ int DataManager::get_size_of_tags_for_path(const FilePath &path) const
 
     return it->second.size();
 }
-int DataManager::get_size_of_paths_with_tag(const FileTag &tag) const
+int DataManager::get_size_of_paths_with_tag(const FileTag &tag) const noexcept
 {
     auto sptr_it = tag_registry_.find(tag);
     if (sptr_it == tag_registry_.end())
@@ -269,13 +269,13 @@ FilePathPtr DataManager::get_or_create_path_ptr(const FilePath &path)
     return path_registry_[path];
 }
 
-FileTagPtr DataManager::find_tag_ptr(const FileTag &tag) const
+FileTagPtr DataManager::find_tag_ptr(const FileTag &tag) const noexcept
 {
     auto it = tag_registry_.find(tag);
     return (it != tag_registry_.end()) ? it->second : nullptr;
 }
 
-FilePathPtr DataManager::find_path_ptr(const FilePath &path) const
+FilePathPtr DataManager::find_path_ptr(const FilePath &path) const noexcept
 {
     auto it = path_registry_.find(path);
     return (it != path_registry_.end()) ? it->second : nullptr;

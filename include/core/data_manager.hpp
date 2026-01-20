@@ -19,8 +19,8 @@ class DataManager
 
     FileTagPtr get_or_create_tag_ptr(const FileTag &tag);
     FilePathPtr get_or_create_path_ptr(const FilePath &path);
-    FileTagPtr find_tag_ptr(const FileTag &tag) const;
-    FilePathPtr find_path_ptr(const FilePath &path) const;
+    FileTagPtr find_tag_ptr(const FileTag &tag) const noexcept;
+    FilePathPtr find_path_ptr(const FilePath &path) const noexcept;
   public:
     DataManager() = default;
     DataManager(const FileTagData &data);
@@ -28,23 +28,23 @@ class DataManager
 
     void create_tag(const FileTag &tag);
     void rename_tag(const FileTag &old_tag, const FileTag &new_tag);
-    void remove_tag(const FileTag &tag);
+    void remove_tag(const FileTag &tag) noexcept;
     std::vector<FileTag> get_all_tags() const;
-    int get_size_of_tags() const;
+    int get_size_of_tags() const noexcept;
 
     void create_path(const FilePath &path);
     void rename_path(const FilePath &old_path, const FilePath &new_path);
-    void remove_path(const FilePath &path);
+    void remove_path(const FilePath &path) noexcept;
     std::vector<FilePath> get_all_paths() const;
-    int get_size_of_paths() const;
+    int get_size_of_paths() const noexcept;
 
     void assign_tag_to_path(const FilePath &path, const FileTag &tag);
     void remove_tag_from_path(const FilePath &path, const FileTag &tag);
 
     std::set<FileTag> get_tags_for_path(const FilePath &path) const;
     std::set<FilePath> get_paths_with_tag(const FileTag &tag) const;
-    int get_size_of_tags_for_path(const FilePath &path) const;
-    int get_size_of_paths_with_tag(const FileTag &tag) const;
+    int get_size_of_tags_for_path(const FilePath &path) const noexcept;
+    int get_size_of_paths_with_tag(const FileTag &tag) const noexcept;
 
     FileTagData get_file_tag_data() const;
 };

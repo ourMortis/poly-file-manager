@@ -22,8 +22,8 @@ bool Serializer::remove_file_hidden(const std::filesystem::path &path) const
 }
 #endif
 
-void Serializer::set_repo_path(FilePath path) { repo_path_ = path; }
-FilePath Serializer::get_repo_path() const { return repo_path_; }
+void Serializer::set_repo_path(FilePath path) noexcept { repo_path_ = path; }
+FilePath Serializer::get_repo_path() const noexcept { return repo_path_; }
 
 json Serializer::data_to_json(const FileTagData &data) const
 {

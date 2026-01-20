@@ -11,7 +11,7 @@ FileManager::FileManager(const FilePath &path)
     repo_path_ = path;
 }
 
-FilePath FileManager::get_symlink_path(const std::string &category_name, const FilePath &target_path)
+FilePath FileManager::get_symlink_path(const std::string &category_name, const FilePath &target_path) const noexcept
 {
 #ifdef _WIN32
     FilePath symlink_path = repo_path_ / category_name /
@@ -25,7 +25,7 @@ FilePath FileManager::get_symlink_path(const std::string &category_name, const F
     return symlink_path;
 }
 
-void FileManager::create_category_dirs(const std::vector<std::string> &category_names)
+void FileManager::create_category_dirs(const std::vector<std::string> &category_names) const
 {
     for (const auto &name : category_names)
     {
@@ -36,12 +36,12 @@ void FileManager::create_category_dirs(const std::vector<std::string> &category_
     }
 }
 
-int FileManager::remove_category_dir(const std::string &category_name)
+int FileManager::remove_category_dir(const std::string &category_name) const
 {
     return std::filesystem::remove_all(repo_path_ / category_name);
 }
 
-bool FileManager::rename_category_dir(const std::string &old_name, const std::string &new_name)
+bool FileManager::rename_category_dir(const std::string &old_name, const std::string &new_name) const
 {
     std::filesystem::rename(repo_path_ / old_name, repo_path_ / new_name);
     if (std::filesystem::is_directory(repo_path_ / new_name) && !std::filesystem::exists(repo_path_ / old_name))
@@ -52,7 +52,7 @@ bool FileManager::rename_category_dir(const std::string &old_name, const std::st
 }
 
 int FileManager::create_symlink_in_category(const std::string &category_name,
-                                                     const std::vector<FilePath> &paths)
+                                                     const std::vector<FilePath> &paths) const
 {
     int cnt = 0;
     for (const auto &path : paths)
@@ -66,7 +66,7 @@ int FileManager::create_symlink_in_category(const std::string &category_name,
     return cnt;
 }
 
-bool FileManager::create_symlink_in_category(const std::string &category_name, const FilePath &path)
+bool FileManager::create_symlink_in_category(const std::string &category_name, const FilePath &path) const
 {
     if (!std::filesystem::is_directory(repo_path_ / category_name))
     {
@@ -82,7 +82,7 @@ bool FileManager::create_symlink_in_category(const std::string &category_name, c
 }
 
 int FileManager::remove_symlink_in_category(const std::string &category_name,
-                                                     const std::vector<FilePath> &paths)
+                                                     const std::vector<FilePath> &paths) const
 {
     int cnt = 0;
     for (auto path : paths)
@@ -96,14 +96,14 @@ int FileManager::remove_symlink_in_category(const std::string &category_name,
     return cnt;
 }
 
-bool FileManager::remove_symlink_in_category(const std::string &category_name, const FilePath &path)
+bool FileManager::remove_symlink_in_category(const std::string &category_name, const FilePath &path) const
 {
     return std::filesystem::remove(get_symlink_path(category_name, path));
 }
 
-FilePath FileManager::get_repo_path() const { return repo_path_; }
+FilePath FileManager::get_repo_path() const noexcept { return repo_path_; }
 
-std::vector<FilePath> FileManager::get_symlinks_in_category(const std::string &category_name)
+std::vector<FilePath> FileManager::get_symlinks_in_category(const std::string &category_name) const
 {
     std::vector<FilePath> paths;
     for (const auto &entry : std::filesystem::directory_iterator(repo_path_ / category_name))

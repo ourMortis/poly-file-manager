@@ -28,7 +28,7 @@ PolyFileManager::PolyFileManager(const std::filesystem::path &repo_path)
     }
 }
 
-std::filesystem::path PolyFileManager::get_repo_path() const
+std::filesystem::path PolyFileManager::get_repo_path() const noexcept
 {
     return file_manager.get_repo_path();
 }
@@ -37,6 +37,11 @@ void PolyFileManager::add_path(const FilePath &path) { data_manager.create_path(
 
 int PolyFileManager::rename_path(const FilePath &old_path, const FilePath &new_path)
 {
+    if (data_manager.get_size_of_tags_for_path(old_path) == 0)
+    {
+        data_manager.rename_path(old_path, new_path);
+        return 1;
+    }
     int rename_symlink_cnt = 0;
     for (const auto &tag : data_manager.get_tags_for_path(old_path))
     {
@@ -58,6 +63,11 @@ int PolyFileManager::rename_path(const FilePath &old_path, const FilePath &new_p
 
 int PolyFileManager::remove_path(const FilePath &path)
 {
+    if (data_manager.get_size_of_tags_for_path(path) == 0)
+    {
+        data_manager.remove_path(path);
+        return 1;
+    }
     int remove_symlink_cnt = 0;
     for (const auto &tag : data_manager.get_tags_for_path(path))
     {
@@ -75,6 +85,11 @@ void PolyFileManager::add_tag(const FileTag &tag) { data_manager.create_tag(tag)
 
 bool PolyFileManager::rename_tag(const FileTag &old_tag, const FileTag &new_tag)
 {
+    if (data_manager.get_size_of_paths_with_tag(old_tag) == 0)
+    {
+        data_manager.rename_tag(old_tag, new_tag);
+        return true;
+        }
     if (file_manager.rename_category_dir(old_tag, new_tag))
     {
         data_manager.rename_tag(old_tag, new_tag);
@@ -85,6 +100,11 @@ bool PolyFileManager::rename_tag(const FileTag &old_tag, const FileTag &new_tag)
 
 int PolyFileManager::remove_tag(const FileTag &tag)
 {
+    if (data_manager.get_size_of_paths_with_tag(tag) == 0)
+    {
+        data_manager.remove_tag(tag);
+        return 1;
+        }
     int remove_items_cnt = file_manager.remove_category_dir(tag);
     if (remove_items_cnt > 0)
     {
