@@ -1,6 +1,8 @@
 # poly-file-manager
 
-In Progress...
+
+
+> Multilingual support: [English](#poly-file-manager) | [中文](#poly-file-manager-中文)
 
 ## Description
 
@@ -12,25 +14,69 @@ Attach tags to files.
 
 Establish a category repository for quick tag based queries.
 
-Automatically organize symbolic link(shortcut in Windwos) in the repository directory.
+Automatically organize symbolic link(shortcut in Windows) in the repository directory.
 
-Sopports Windows and linux(untested).
+Supports Windows and linux(untested).
 
 ## Installation
 
-**Direct installation:**
+**Direct installation**
 
 In Progress
 
-**Compile requirements:** 
+**Compile requirements**
 
-1. cmake version 4.0.0
+1. cmake version 4.x
 
-2. MinGW-w64 or GCC sopporting C++23
+2. MinGW-w64 or GCC supporting C++23
 
+```
 git clone ...
+```
 
-Select and compile the content you need it through CMakeLists.txt
+Select and compile the content you need through CMakeLists.txt
+
+Add the program to the environment variable
+
+## Usage
+
+**command line tool**
+
+**General Syntax**
+
+```
+# Add multiple labels to a path
+pfm [--repo REPOSITORY_PATH] [-r] <PATH> -t <TAG>...
+
+# Add the same label to multiple paths
+pfm [--repo REPOSITORY_PATH] [-r] <TAG> -p <PATH>...
+
+# Create a repository, if not specified with the --repo option, defaults to the current working directory
+pfm [--repo REPOSITORY_PATH] -c
+
+# Add, delete, or modify paths or labels
+pfm [--repo REPOSITORY_PATH] (tag|path) (-a <ARG>...| -r <ARG>...| -m <OLD_ARG> <NEW_ARG>)
+```
+
+**Subcommands**
+
+tag: Specially manage tags
+
+path: Specially manage paths
+
+**Options**
+
+|             Option              |                         Description                          |
+| :-----------------------------: | :----------------------------------------------------------: |
+|         `--repo <path>`         | Specify the repository path (defaults to current working directory if not provided) |
+|          `-r,--remove`          | Remove associations between a tag and a path with this flag  |
+|         `-c, --create`          |  Create a new repository(Uses --repo to specify directory)   |
+|          `tag_or_path`          | This positional argument must be a tag if the "-t" option is used, or a path if the "-p" option is used |
+|           `-t,--tag`            |       Specify one or more tags (supports 1-99 values)        |
+|           `-p,--path`           | Specify one or more file/directory paths (supports 1-99 values) |
+|           `-a,--add`            |             Add tags or paths using subcommands              |
+| `-r,--remove`(using subcommand) |            Remove tags or paths using subcommands            |
+|    `-m,--modify <old> <new>`    | Modify tag or path using subcommands. This must have two parameters, one old and one new |
 
 ## License
 
@@ -39,3 +85,85 @@ GPLv3
 ## Acknowledgements
 
 nlohmann/json
+
+CLI11
+
+# poly-file-manager 中文
+
+## 描述
+
+本软件的核心功能是对文件进行分类与管理。软件仅负责文件结构的组织，并辅助操作系统的文件管理器展示该结构。
+
+## 功能特性
+
+1. 为文件添加标签
+2. 建立分类仓库，支持基于标签的快速查询
+3. 自动整理仓库目录下的符号链接（即 Windows 系统中的快捷方式）
+4. 支持 Windows 系统与 Linux 系统（Linux 版本暂未测试）
+
+## 安装
+
+### 直接安装
+
+开发中
+
+### 编译环境要求
+
+1. CMake 4.x 版本
+2. 支持 C++23 标准的 MinGW-w64 或 GCC 编译器
+
+```
+git clone ...
+```
+
+通过 CMakeLists.txt 文件选择并编译你需要的功能模块
+
+将程序添加到环境变量
+
+## 使用方法
+
+**命令行工具**
+
+**通用语法**
+
+```
+# 为单个路径添加多个标签
+pfm [--repo 仓库路径] [-r] <目标路径> -t <标签>...
+
+# 为多个路径添加同一个标签
+pfm [--repo 仓库路径] [-r] <标签> -p <目标路径>...
+
+# 创建仓库，若未指定 --repo 参数，则默认在当前工作目录创建
+pfm [--repo 仓库路径] -c
+
+# 新增、删除或修改路径与标签
+pfm [--repo 仓库路径] (tag|path) (-a <参数>...| -r <参数>...| -m <旧参数> <新参数>)
+```
+
+#### 子命令
+
+- tag：专门用于管理标签
+- path：专门用于管理路径
+
+#### 选项说明
+
+| 选项                            | 描述                                                         |
+| ------------------------------- | ------------------------------------------------------------ |
+| `--repo <路径>`                 | 指定仓库路径（若未指定，默认使用当前工作目录）               |
+| `-r,--remove`                   | 使用此参数，移除标签与路径之间的关联关系                     |
+| `-c, --create`                  | 创建新仓库（需通过 --repo 参数指定仓库目录）                 |
+| `tag_or_path`                   | 位置参数：当使用 `-t` 选项时，该参数为标签；当使用 `-p` 选项时，该参数为路径 |
+| `-t,--tag`                      | 指定一个或多个标签（最多支持 99 个标签）                     |
+| `-p,--path`                     | 指定一个或多个文件 / 目录路径（最多支持 99 个路径）          |
+| `-a,--add`                      | 通过子命令新增标签或路径                                     |
+| `-r,--remove`（子命令模式）     | 通过子命令删除标签或路径                                     |
+| `-m,--modify <旧参数> <新参数>` | 通过子命令修改标签或路径，该选项必须传入两个参数：旧参数与新参数 |
+
+## 许可证
+
+GPLv3 协议
+
+## 致谢
+
+- nlohmann/json 库
+- CLI11 库

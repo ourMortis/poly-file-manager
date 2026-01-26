@@ -12,18 +12,25 @@ int main(int argc, char **argv)
         if (command)
         {
             auto result = command->execute();
-            return static_cast<int>(result);
+            return static_cast<int>(result.code);
         }
-        return static_cast<int>(poly::cli::CommandResult::Success);
+        return 0;
     }
     catch (const CLI::ParseError &e)
     {
-        std::cerr << "Unexpected error: " << e.what() << std::endl;
-        return 1;
+        if (e.get_exit_code() == static_cast<int>(CLI::ExitCodes::Success))
+        {
+            return 0;
+        }
+        else
+        {
+            std::cerr << "[ERROR]: " << e.what() << std::endl;
+            return e.get_exit_code();
+        }
     }
-    catch (const std::exception &e)
+    catch (const poly::cli::CommandError &e)
     {
-        std::cerr << "Unexpected error: " << e.what() << std::endl;
-        return 2;
+        std::cerr << "[ERROR]: " << e.message << std::endl;
+        return static_cast<int>(e.code);
     }
 }

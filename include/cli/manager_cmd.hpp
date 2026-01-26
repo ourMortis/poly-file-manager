@@ -17,7 +17,7 @@ class ManagerCmd : public Cmd
           tag_or_path_(std::move(tag_or_path)), remove_flag_(std::move(remove_flag)), create_flag_(std::move(create_flag))
     {
     }
-    CommandResult execute() override;
+    CommandError execute() override;
 
   private:
     std::vector<std::string> tags_;

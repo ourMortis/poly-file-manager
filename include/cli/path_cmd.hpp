@@ -17,7 +17,7 @@ class PathCmd : public Cmd
           modify_path_(std::move(modify_path))
     {
     }
-    CommandResult execute() override;
+    CommandError execute() override;
 
   private:
     std::vector<std::string> add_paths_;

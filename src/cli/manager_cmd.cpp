@@ -3,68 +3,80 @@
 
 namespace poly::cli
 {
-CommandResult ManagerCmd::execute()
+CommandError ManagerCmd::execute()
 {
-    if (!create_flag_ && (tag_or_path_.empty() || (tags_.empty() && paths_.empty())))
+    try
     {
-        return CommandResult::InvalidArgs;
-    }
-
-    auto manager = create_manager();
-
-    if (create_flag_)
-    {
-        if (!manager.save())
+        if (!create_flag_ && (tag_or_path_.empty() || (tags_.empty() && paths_.empty())))
         {
-            return CommandResult::BusinessError;
+            return {ErrorCode::InvalidArgs_MissingParameter,
+                    "Missing parameter! Use: tag -p path... or path -t tag..."};
         }
-    }
-    else if (!tags_.empty())
-    {
-        if (remove_flag_)
+
+        auto manager = create_manager();
+
+        if (create_flag_)
         {
-            for (const auto &tag : tags_)
+            if (!manager.save())
             {
-                if (!manager.remove_tag_from_file(tag_or_path_, tag))
+                return {ErrorCode::Business_CreateRepositoryFailed, "Failed to create repository"};
+            }
+        }
+        else if (!tags_.empty())
+        {
+            if (remove_flag_)
+            {
+                for (const auto &tag : tags_)
                 {
-                    return CommandResult::BusinessError;
+                    if (!manager.remove_tag_from_file(tag_or_path_, tag))
+                    {
+                        return {ErrorCode::Business_AssignTagFailed, "Failed to remove tag from file"};
+                    }
+                }
+            }
+            else
+            {
+                for (const auto &tag : tags_)
+                {
+                    if (!manager.assign_tag_to_file(tag_or_path_, tag))
+                    {
+                        return {ErrorCode::Business_AssignTagFailed, "Failed to assign tag to file"};
+                    }
                 }
             }
         }
         else
         {
-            for (const auto &tag : tags_)
+            if (remove_flag_)
             {
-                if (!manager.assign_tag_to_file(tag_or_path_, tag))
+                for (const auto &path : paths_)
                 {
-                    return CommandResult::BusinessError;
+                    if (!manager.remove_tag_from_file(path, tag_or_path_))
+                    {
+                        return {ErrorCode::Business_AssignTagFailed, "Failed to remove tag from file"};
+                    }
+                }
+            }
+            else
+            {
+                for (const auto &path : paths_)
+                {
+                    if (!manager.assign_tag_to_file(path, tag_or_path_))
+                    {
+                        return {ErrorCode::Business_AssignTagFailed, "Failed to assign tag to file"};
+                    }
                 }
             }
         }
+        return {ErrorCode::Success, ""};
     }
-    else
+    catch (const std::system_error &e)
     {
-        if (remove_flag_)
-        {
-            for (const auto &path : paths_)
-            {
-                if (!manager.remove_tag_from_file(path, tag_or_path_))
-                {
-                    return CommandResult::BusinessError;
-                }
-            }
-        }
-        else
-        {
-            for (const auto &path : paths_)
-            {
-                if (!manager.assign_tag_to_file(path, tag_or_path_))
-                {
-                    return CommandResult::BusinessError;
-                }
-            }
-        }
+        return {ErrorCode::System_FileSystemError, "File system exception: " + std::string(e.what())};
     }
-    return CommandResult::Success;
+    catch (const std::exception &e)
+    {
+        return {ErrorCode::System_Unknown, "Unexpected error: " + std::string(e.what())};
+    }
 }
 } // namespace poly::cli

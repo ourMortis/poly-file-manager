@@ -29,7 +29,7 @@ include_directories(./include/core ./include/cli)
 # endif()
 
 if(WIN32)
-add_executable(poly_file_manager_cli src/cli/main.cpp src/core/poly_file_manager.cpp src/core/data_manager.cpp src/core/file_manager.cpp src/core/serializer.cpp src/core/windows_shortcut_creator.cpp src/cli/cli_parser.cpp src/cli/manager_cmd.cpp src/cli/tag_cmd.cpp src/cli/path_cmd.cpp)
-    target_link_libraries(poly_file_manager_cli PRIVATE ole32 shell32)
+add_executable(pfm src/cli/main.cpp src/core/poly_file_manager.cpp src/core/data_manager.cpp src/core/file_manager.cpp src/core/serializer.cpp src/core/windows_shortcut_creator.cpp src/cli/cli_parser.cpp src/cli/manager_cmd.cpp src/cli/tag_cmd.cpp src/cli/path_cmd.cpp)
+    target_link_libraries(pfm PRIVATE ole32 shell32)
 endif()
 

@@ -18,7 +18,7 @@ class TagCmd : public Cmd
     {
     }
 
-    CommandResult execute() override;
+    CommandError execute() override;
 
   private:
     std::vector<std::string> add_tags_;
