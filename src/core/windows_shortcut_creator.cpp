@@ -4,7 +4,6 @@ const CLSID CLSID_ShellLink = {0x00021401, 0x0000, 0x0000, {0xC0, 0x00, 0x00, 0x
 const IID IID_IShellLinkW = {0x000214F9, 0x0000, 0x0000, {0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
 const IID IID_IPersistFile = {0x0000010b, 0x0000, 0x0000, {0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
 
-// 实现create方法
 bool ShortcutCreator::create(const std::filesystem::path &targetPath, const std::filesystem::path &shortcutPath)
 {
 
@@ -16,11 +15,10 @@ bool ShortcutCreator::create(const std::filesystem::path &targetPath, const std:
     std::wstring shortcutWstr = shortcutPath.wstring();
 
     HRESULT hr;
-    // 初始化COM库（COINIT_APARTMENTTHREADED是Shell API推荐的线程模型）
     hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (FAILED(hr))
     {
-        std::cerr << "COM库初始化失败，错误码：" << hr << std::endl;
+        std::cerr << "Initialize COM library failed, error code: " << hr << '\n';
         return false;
     }
 
@@ -28,62 +26,59 @@ bool ShortcutCreator::create(const std::filesystem::path &targetPath, const std:
     IShellLinkW *pShellLink = nullptr;
     IPersistFile *pPersistFile = nullptr;
 
-    // 创建IShellLink接口实例
+    // Instantiate IShellLink API
     hr = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (void **)&pShellLink);
     if (SUCCEEDED(hr))
     {
-        // 设置目标路径（核心，必须）
+        // set target path
         hr = pShellLink->SetPath(targetWstr.c_str());
         if (FAILED(hr))
         {
-            std::cerr << "设置目标路径失败，错误码：" << hr << std::endl;
+            std::cerr << "Set target path failed, error code: " << hr << '\n';
             goto Cleanup;
         }
 
-        // 设置工作目录为目标路径（增强兼容性）
+        // Set the working directory as the target path (to enhance compatibility)
         hr = pShellLink->SetWorkingDirectory(targetWstr.c_str());
         if (FAILED(hr))
         {
-            std::cerr << "设置工作目录失败，错误码：" << hr << std::endl;
+            std::cerr << "Set working directory failed, error code: " << hr << '\n';
             goto Cleanup;
         }
 
-        // 设置窗口样式（默认普通窗口，对文件夹无效）
         hr = pShellLink->SetShowCmd(SW_SHOWNORMAL);
         if (FAILED(hr))
         {
-            std::cerr << "设置窗口样式失败，错误码：" << hr << std::endl;
+            std::cerr << "Set windows style failed, error code:" << hr << '\n';
             goto Cleanup;
         }
 
-        // 获取IPersistFile接口，用于保存快捷方式
+        // Get IPersistFile API
         hr = pShellLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile);
         if (SUCCEEDED(hr))
         {
-            // 保存快捷方式文件
             hr = pPersistFile->Save(shortcutWstr.c_str(), TRUE);
             if (SUCCEEDED(hr))
             {
                 bResult = true;
-                std::cout << "快捷方式创建成功 -> " << shortcutPath << std::endl;
+                std::cout << "Create shortcut success: " << shortcutPath << '\n';
             }
             else
             {
-                std::cerr << "保存快捷方式失败，错误码：" << hr << std::endl;
+                std::cerr << "Create shortcut failed, error code: " << hr << '\n';
             }
         }
         else
         {
-            std::cerr << "获取IPersistFile接口失败，错误码：" << hr << std::endl;
+            std::cerr << "Get IPersistFile API failed, error code: " << hr << '\n';
         }
     }
     else
     {
-        std::cerr << "创建IShellLink实例失败，错误码：" << hr << std::endl;
+        std::cerr << "Instantiate IShellLink failed, error code: " << hr << '\n';
     }
 
 Cleanup:
-    // 释放接口资源
     if (pPersistFile)
     {
         pPersistFile->Release();
@@ -92,9 +87,6 @@ Cleanup:
     {
         pShellLink->Release();
     }
-
-    // 释放COM库
     CoUninitialize();
-
     return bResult;
 }

@@ -20,7 +20,7 @@ class FileManager
     FileManager(const FilePath &path);
     ~FileManager() = default;
 
-    void create_category_dirs(const std::vector<std::string> &category_names) const;
+    bool create_category_dirs(const std::vector<std::string> &category_names) const;
     /// @returns The number of removed files, including the folder
     int remove_category_dir(const std::string &category_name) const;
     bool rename_category_dir(const std::string &old_name, const std::string &new_name) const;

@@ -41,8 +41,15 @@ std::unique_ptr<Cmd> CliParser::parse()
     {
         app_.parse(argc_, argv_);
 
-        std::filesystem::path repo_path =
-            repo_path_.empty() ? std::filesystem::current_path() : std::filesystem::path(repo_path_);
+        std::filesystem::path repo_path(repo_path_);
+        if (repo_path_.empty())
+        {
+            repo_path = std::filesystem::current_path();
+        }
+        else if (repo_path.is_relative())
+        {
+            repo_path = std::filesystem::current_path() / repo_path;    
+        }
 
         if (app_.get_subcommand("tag")->parsed())
         {
@@ -71,7 +78,7 @@ std::unique_ptr<Cmd> CliParser::parse()
     catch (const std::exception &e)
     {
         throw CLI::ParseError("Unexpected error during parsing: " + std::string(e.what()),
-                              CLI::ExitCodes::ArgumentMismatch);
+                              CLI::ExitCodes::HorribleError);
     }
 }
 

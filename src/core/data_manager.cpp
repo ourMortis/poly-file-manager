@@ -1,5 +1,6 @@
 #include "data_manager.hpp"
 #include "common_types.hpp"
+#include <cmath>
 
 DataManager::DataManager(const FileTagData &data)
 {
@@ -279,4 +280,23 @@ FilePathPtr DataManager::find_path_ptr(const FilePath &path) const noexcept
 {
     auto it = path_registry_.find(path);
     return (it != path_registry_.end()) ? it->second : nullptr;
+}
+
+bool DataManager::contains_tag(const FileTag &tag) const noexcept
+{
+    return tag_registry_.find(tag) != tag_registry_.end(); 
+    }
+bool DataManager::contains_path(const FilePath &path) const noexcept
+{
+    return path_registry_.find(path) != path_registry_.end();
+    }
+bool DataManager::contains_association(const FilePath &path, const FileTag &tag) const noexcept
+{
+    if (!contains_path(path) || !contains_tag(tag))
+    {
+        return false;
+    }
+    auto it_path_to_tag = path_to_tags_map_.find(path_registry_.find(path)->second);
+    const auto &tag_ptr_set = it_path_to_tag->second;
+    return tag_ptr_set.find(tag_registry_.find(tag)->second) != tag_ptr_set.end();
 }

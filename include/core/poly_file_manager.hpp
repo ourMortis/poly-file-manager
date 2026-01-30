@@ -27,16 +27,13 @@ class PolyFileManager
 
     std::filesystem::path get_repo_path() const noexcept;
 
-    void add_path(const FilePath &path);
-    /// @returns The number of renamed symbolic links or shortcuts on Windows
-    int rename_path(const FilePath &old_path, const FilePath &new_path);
-    /// @returns The number of removed symbolic links or shortcuts on Windows
-    int remove_path(const FilePath &path);
+    bool add_path(const FilePath &path);
+    bool rename_path(const FilePath &old_path, const FilePath &new_path);
+    bool remove_path(const FilePath &path);
 
-    void add_tag(const FileTag &tag);
+    bool add_tag(const FileTag &tag);
     bool rename_tag(const FileTag &old_tag, const FileTag &new_Tag);
-    /// @returns The number of removed files including the directory
-    int remove_tag(const FileTag &tag);
+    bool remove_tag(const FileTag &tag);
 
     bool assign_tag_to_file(const FilePath &path, const FileTag &tag);
     bool remove_tag_from_file(const FilePath &path, const FileTag &tag);
@@ -50,6 +47,8 @@ class PolyFileManager
     void load(const std::filesystem::path &repo_path);
 
     bool save() const;
+
+    static bool is_repository(const std::filesystem::path &repo_path);
 };
 
 #endif // POLY_FILE_MANAGER_H

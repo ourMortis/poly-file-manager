@@ -1,20 +1,31 @@
 #include "cli_parser.hpp"
 #include "cmd.hpp"
+#include "manager_cmd.hpp"
+#include "tag_cmd.hpp"
+#include "path_cmd.hpp"
+#include <exception>
 #include <iostream>
+#include <system_error>
 
 int main(int argc, char **argv)
 {
+    poly::cli::CommandError result;
     try
     {
         poly::cli::CliParser parser(argc, argv);
         auto command = parser.parse();
-
         if (command)
         {
-            auto result = command->execute();
-            return static_cast<int>(result.code);
+            result = command->execute();
+            if (result.code != poly::cli::ErrorCode::Success)
+            {
+                std::cerr << result.message;
+            }
+            else
+            {
+                std::cout << result.message;
+            }
         }
-        return 0;
     }
     catch (const CLI::ParseError &e)
     {
@@ -24,13 +35,14 @@ int main(int argc, char **argv)
         }
         else
         {
-            std::cerr << "[ERROR]: " << e.what() << std::endl;
+            std::cerr << e.what() << std::endl;
             return e.get_exit_code();
         }
     }
-    catch (const poly::cli::CommandError &e)
+    catch (const std::exception &e)
     {
-        std::cerr << "[ERROR]: " << e.message << std::endl;
-        return static_cast<int>(e.code);
+        std::cerr << e.what() << std::endl;
+        return 1;
     }
+    return static_cast<int>(result.code);
 }

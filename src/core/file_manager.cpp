@@ -25,15 +25,16 @@ FilePath FileManager::get_symlink_path(const std::string &category_name, const F
     return symlink_path;
 }
 
-void FileManager::create_category_dirs(const std::vector<std::string> &category_names) const
+bool FileManager::create_category_dirs(const std::vector<std::string> &category_names) const
 {
     for (const auto &name : category_names)
     {
         if (!std::filesystem::create_directory(repo_path_ / name))
         {
-            throw std::runtime_error("Failed to create directory '" + (repo_path_ / name).string());
+            return false;
         }
     }
+    return true;
 }
 
 int FileManager::remove_category_dir(const std::string &category_name) const
@@ -76,7 +77,7 @@ bool FileManager::create_symlink_in_category(const std::string &category_name, c
     ShortcutCreator creator;
     return creator.create(path, get_symlink_path(category_name, path));
 #else
-    std::filesystem::create_directory_symlink(path, get_symlink_path(category_name, path));
+    std::filesystem::create_symlink(path, get_symlink_path(category_name, path));
     return true;
 #endif
 }

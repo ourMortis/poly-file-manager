@@ -8,40 +8,61 @@ CommandError TagCmd::execute()
 {
     try
     {
+        if (!PolyFileManager::is_repository(repo_path_))
+        {
+            return {ErrorCode::InvalidArgs_InvalidPath, "[Error]The path does not point to the repository\n"};
+        }
         auto manager = create_manager();
-
+        std::string message;
         for (const auto &tag : add_tags_)
         {
-            manager.add_tag(tag);
+            if (!manager.add_tag(tag))
+            {
+                if (!manager.save())
+                {
+                    return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+                }
+                return {ErrorCode::Business_AddTagFailed, message + "[Error]" + tag + "(The tag may already exist)\n"};
+            }
+            message += "[new]" + tag + '\n';
         }
 
         for (const auto &tag : remove_tags_)
         {
-            if (manager.remove_tag(tag) == 0)
+            if (!manager.remove_tag(tag))
             {
-                return {ErrorCode::Business_RemoveTagFailed, "Failed to remove tag"};
+                if (!manager.save())
+                {
+                    return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+                }
+                return {ErrorCode::Business_RemoveTagFailed,
+                        message + "[Error]Failed to remove tag: " + tag + '\n'};
             }
+            message += "[Removed]" + tag + '\n';
         }
 
         if (!modify_tag_.first.empty())
         {
             if (!manager.rename_tag(modify_tag_.first, modify_tag_.second))
             {
-
-                return {ErrorCode::Business_RenameTagFailed, "Failed to rename tag"};
+                if (!manager.save())
+                {
+                    return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+                }
+                return {ErrorCode::Business_RenameTagFailed, message + "[Error]Failed to rename tag\n"};
             }
+            message += "[Renamed]" + modify_tag_.first + " -> " + modify_tag_.second + '\n';
         }
 
         if (!manager.save())
         {
-
-            return {ErrorCode::Business_SaveFileFailed, "Failed to save result"};
+            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
         }
-        return {ErrorCode::Success, ""};
+        return {ErrorCode::Success, message};
     }
     catch (const std::system_error &e)
     {
-        return {ErrorCode::System_FileSystemError, "File system exception: " + std::string(e.what())};
+        return {ErrorCode::System_FileSystemError, "File system error: " + std::string(e.what())};
     }
     catch (const std::exception &e)
     {

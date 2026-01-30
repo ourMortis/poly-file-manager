@@ -2,6 +2,7 @@
 #define DATA_MANAGER_H
 
 #include "common_types.hpp"
+#include <cstdio>
 #include <iostream>
 #include <map>
 #include <ranges>
@@ -47,6 +48,10 @@ class DataManager
     int get_size_of_paths_with_tag(const FileTag &tag) const noexcept;
 
     FileTagData get_file_tag_data() const;
+
+    bool contains_tag(const FileTag &tag) const noexcept;
+    bool contains_path(const FilePath &path) const noexcept;
+    bool contains_association(const FilePath &path, const FileTag& tag) const noexcept;
 };
 
 #endif // DATA_MANAGER_H

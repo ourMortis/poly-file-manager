@@ -1,5 +1,6 @@
 #include "manager_cmd.hpp"
 #include "cmd.hpp"
+#include "poly_file_manager.hpp"
 
 namespace poly::cli
 {
@@ -9,20 +10,46 @@ CommandError ManagerCmd::execute()
     {
         if (!create_flag_ && (tag_or_path_.empty() || (tags_.empty() && paths_.empty())))
         {
-            return {ErrorCode::InvalidArgs_MissingParameter,
-                    "Missing parameter! Use: tag -p path... or path -t tag..."};
+            return {ErrorCode::InvalidArgs_ConflictOption,
+                    "[Error]Missing parameter! Use: tag -p path... or path -t tag...\n"};
         }
 
-        auto manager = create_manager();
+        std::string message;
 
         if (create_flag_)
         {
+            auto manager = create_manager();
+            if (repo_path_.is_relative())
+            {
+                return {ErrorCode::InvalidArgs_InvalidPath,
+                        "[Error]The repository path should not be a relative path\n"};
+            }
+            for (const auto &entry : std::filesystem::directory_iterator(repo_path_))
+            {
+                const auto &entry_path = entry.path();
+                if (entry_path.filename() == "." || entry_path.filename() == "..")
+                {
+                    continue;
+                }
+                return {ErrorCode::InvalidArgs_InvalidPath, "[Error]The repository directory is not empty\n"};
+            }
             if (!manager.save())
             {
-                return {ErrorCode::Business_CreateRepositoryFailed, "Failed to create repository"};
+                return {ErrorCode::Business_CreateRepositoryFailed, "[Error]Failed to create repository\n"};
+            }
+            message += "[Created]" + repo_path_.string() + '\n';
+            if (!manager.save())
+            {
+                return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
             }
         }
-        else if (!tags_.empty())
+
+        if (!PolyFileManager::is_repository(repo_path_))
+        {
+            return {ErrorCode::InvalidArgs_InvalidPath, "[Error]The path does not point to the repository\n"};
+        }
+        auto manager = create_manager();
+        if (!tags_.empty())
         {
             if (remove_flag_)
             {
@@ -30,8 +57,15 @@ CommandError ManagerCmd::execute()
                 {
                     if (!manager.remove_tag_from_file(tag_or_path_, tag))
                     {
-                        return {ErrorCode::Business_AssignTagFailed, "Failed to remove tag from file"};
+                        if (!manager.save())
+                        {
+                            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+                        }
+                        return {ErrorCode::Business_RemoveAssociationFailed, message + "[Error]Failed to remove tag (" +
+                                                                                 tag + ") from file: " + tag_or_path_ +
+                                                                                 "\n"};
                     }
+                    message += "[Removed]" + tag_or_path_ + ": " + tag + '\n';
                 }
             }
             else
@@ -40,8 +74,14 @@ CommandError ManagerCmd::execute()
                 {
                     if (!manager.assign_tag_to_file(tag_or_path_, tag))
                     {
-                        return {ErrorCode::Business_AssignTagFailed, "Failed to assign tag to file"};
+                        if (!manager.save())
+                        {
+                            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+                        }
+                        return {ErrorCode::Business_AssignTagFailed,
+                                message + "[Error]Failed to assign tag (" + tag + ") to file: " + tag_or_path_ + "\n"};
                     }
+                    message += "[New]" + tag_or_path_ + ": " + tag + '\n';
                 }
             }
         }
@@ -53,8 +93,14 @@ CommandError ManagerCmd::execute()
                 {
                     if (!manager.remove_tag_from_file(path, tag_or_path_))
                     {
-                        return {ErrorCode::Business_AssignTagFailed, "Failed to remove tag from file"};
+                        if (!manager.save())
+                        {
+                            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+                        }
+                        return {ErrorCode::Business_RemoveAssociationFailed,
+                                "Failed to remove tag (" + tag_or_path_ + ") from file: " + path + "\n"};
                     }
+                    message += "[Removed]" + path + ": " + tag_or_path_ + '\n';
                 }
             }
             else
@@ -63,20 +109,32 @@ CommandError ManagerCmd::execute()
                 {
                     if (!manager.assign_tag_to_file(path, tag_or_path_))
                     {
-                        return {ErrorCode::Business_AssignTagFailed, "Failed to assign tag to file"};
+                        if (!manager.save())
+                        {
+                            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+                        }
+                        return {ErrorCode::Business_AssignTagFailed,
+                                message + "[Error]Failed to assign tag (" + tag_or_path_ + ") to file: " + path + "\n"};
                     }
+                    message += "[New]" + path + ": " + tag_or_path_ + '\n';
                 }
             }
         }
-        return {ErrorCode::Success, ""};
+
+        if (!manager.save())
+        {
+            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+        }
+
+        return {ErrorCode::Success, message};
     }
     catch (const std::system_error &e)
     {
-        return {ErrorCode::System_FileSystemError, "File system exception: " + std::string(e.what())};
+        return {ErrorCode::System_FileSystemError, "[Error]File system error: " + std::string(e.what())};
     }
     catch (const std::exception &e)
     {
-        return {ErrorCode::System_Unknown, "Unexpected error: " + std::string(e.what())};
+        return {ErrorCode::System_Unknown, "[Error]Unexpected error: " + std::string(e.what())};
     }
 }
 } // namespace poly::cli

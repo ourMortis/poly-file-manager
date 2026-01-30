@@ -11,27 +11,26 @@ enum class ErrorCode
 {
     Success = 0,
 
-    InvalidArgs_EmptyRequired = 101,
-    InvalidArgs_InvalidPath = 102,
-    InvalidArgs_ConflictOption = 103,
-    InvalidArgs_MissingParameter = 104,
+    InvalidArgs_EmptyArgument = 101,
+    InvalidArgs_InvalidPath,
+    InvalidArgs_InvalidTag,
+    InvalidArgs_ConflictOption,
 
-    Business_TagNotFound = 201,
-    Business_PathNotFound = 202,
-    Business_RenameTagFailed = 203,
-    Business_RenamePathFailed = 204,
-    Business_SaveFileFailed = 205,
-    Business_ReadFileFailed = 206,
-    Business_AssignTagFailed = 207,
-    Business_CreateRepositoryFailed = 208,
-    Business_RemoveTagFailed = 209,
-    Business_RemovePathFailed = 210,
-    Business_CreateTagFailed = 211,
-    Business_CreatePathFailed = 212,
+    Business_AddTagFailed = 201,
+    Business_AddPathFailed,
+    Business_RenameTagFailed,
+    Business_RenamePathFailed,
+    Business_RemoveTagFailed,
+    Business_RemovePathFailed,
+    Business_SaveResultFailed,
+    Business_ReadFileFailed,
+    Business_AssignTagFailed,
+    Business_RemoveAssociationFailed,
+    Business_CreateRepositoryFailed,
 
     System_FileSystemError = 301,
-    System_PermissionDenied = 302,
-    System_Unknown = 999
+    System_OutOfMemory,
+    System_Unknown
 };
 
 struct CommandError
