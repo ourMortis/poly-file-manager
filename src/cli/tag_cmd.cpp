@@ -14,6 +14,26 @@ CommandError TagCmd::execute()
         }
         auto manager = create_manager();
         std::string message;
+
+        if (list_flag_)
+        {
+            int cnt = 0;
+            for (const auto &tag : manager.get_all_tags())
+            {
+                cnt++;
+                message += tag + ' ';
+                if (cnt % 5 == 0)
+                {
+                    message += '\n';    
+                }
+            }
+            if (cnt % 5)
+            {
+                message += '\n';   
+            }
+            return {ErrorCode::Success, message};
+        }
+
         for (const auto &tag : add_tags_)
         {
             if (!manager.add_tag(tag))

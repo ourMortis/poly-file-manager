@@ -7,6 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(./include/core ./include/cli)
 
+# set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 # add_executable(data_manager_test1 test/data_manager_test1.cpp src/core/data_manager.cpp)
 
 # add_executable(data_manager_test2 test/data_manager_test2.cpp src/core/data_manager.cpp)

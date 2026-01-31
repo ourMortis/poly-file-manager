@@ -28,9 +28,11 @@ private:
     std::vector<std::string> path_remove_;
     std::pair<std::string, std::string> path_modify_;
 
+    bool list_flag_ = false;
+
     std::vector<std::string> tags_;
     std::vector<std::string> paths_;
-    std::string tag_or_path_;
+    std::vector<std::string> tag_or_path_;
     bool remove_flag_ = false;
     bool create_flag_ = false;
 

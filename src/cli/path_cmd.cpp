@@ -16,6 +16,16 @@ CommandError PathCmd::execute()
         }
         auto manager = create_manager();
         std::string message;
+
+        if (list_flag_)
+        {
+            for (const auto &path : manager.get_all_paths())
+            {
+                message += path.string() + '\n';
+            }
+            return {ErrorCode::Success, message};
+        }
+
         for (const auto &path : add_paths_)
         {
             if (!manager.add_path(path))

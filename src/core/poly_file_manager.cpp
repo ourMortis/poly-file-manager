@@ -3,11 +3,13 @@
 #include "data_manager.hpp"
 #include "file_manager.hpp"
 #include "serializer.hpp"
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fltwinerror.h>
 #include <stdexcept>
 #include <vector>
+#include <winnt.h>
 
 bool PolyFileManager::repo_path_invalid(const FilePath &repo_path) const
 {
@@ -176,6 +178,33 @@ std::vector<FilePath> PolyFileManager::get_paths_with_tag(const FileTag &tag) co
     return std::vector<FilePath>(path_set.begin(), path_set.end());
 }
 
+std::set<FilePath> PolyFileManager::get_paths_with_tags(const std::vector<FileTag> &tags) const
+{
+    std::set<FilePath> pre, result = data_manager.get_paths_with_tag(tags[0]);
+    
+    for (int i = 1;i < tags.size();i++)
+    {
+        pre = std::move(result);
+        auto cur = data_manager.get_paths_with_tag(tags[i]);
+        std::set_intersection(cur.begin(), cur.end(), pre.begin(), pre.end(), std::inserter(result, result.begin()));
+    }
+
+    return result;
+}
+std::set<FileTag> PolyFileManager::get_tags_with_paths(const std::vector<FileTag> &paths) const
+{
+    std::set<FileTag> pre, result = data_manager.get_tags_for_path(paths[0]);
+    
+    for (int i = 1;i < paths.size();i++)
+    {
+        pre = std::move(result);
+        auto cur = data_manager.get_tags_for_path(paths[i]);
+        std::set_intersection(cur.begin(), cur.end(), pre.begin(), pre.end(), std::inserter(result, result.begin()));
+    }
+
+    return result;
+}
+
 void PolyFileManager::load(const std::filesystem::path &repo_path)
 {
     FileTagData data = serializer.deserialize_from_file();
@@ -191,4 +220,69 @@ bool PolyFileManager::save() const
 bool PolyFileManager::is_repository(const std::filesystem::path &repo_path)
 {
     return std::filesystem::is_regular_file(repo_path / ".poly_file_manager");
+}
+
+bool PolyFileManager::is_data_consistent_with_repository() const
+{
+    auto tag_vector = data_manager.get_all_tags();
+    auto category_names_set = file_manager.get_category_dir_names_in_repo();
+    if (tag_vector.size() != category_names_set.size())
+    {
+        return false;    
+    }
+    for (const auto &name : tag_vector)
+    {
+        if (category_names_set.find(name) == category_names_set.end())
+        {
+            return false;
+        }
+    }
+    for (const auto &tag : tag_vector)
+    {
+        auto paths = data_manager.get_paths_with_tag(tag);
+        auto symlink_names = file_manager.get_symlink_names_in_category(tag);
+        if (paths.size() != symlink_names.size())
+        {
+            return false;
+        }
+        for (const auto &path : paths)
+        {
+            if (symlink_names.find(path.filename().string()) == symlink_names.end())
+            {
+                return false;
+            }    
+        }
+    }
+    return true;
+}
+
+bool PolyFileManager::sync_data_with_repository()
+{
+    for (const auto &entry : std::filesystem::directory_iterator(get_repo_path()))
+    {
+        if (std::filesystem::is_directory(entry.path()))
+        {
+            if (std::filesystem::remove_all(entry.path()) < 1)
+            {
+                return false;    
+            }
+        }    
+    }
+    auto tags = data_manager.get_all_tags();
+    if (!file_manager.create_category_dirs(tags))
+    {
+        return false;
+    }
+    for (const auto &tag : tags)
+    {
+        auto paths = data_manager.get_paths_with_tag(tag);
+        for (const auto &path : paths)
+        {
+            if (!file_manager.create_symlink_in_category(tag, path))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
 }

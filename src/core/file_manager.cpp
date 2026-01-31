@@ -104,12 +104,30 @@ bool FileManager::remove_symlink_in_category(const std::string &category_name, c
 
 FilePath FileManager::get_repo_path() const noexcept { return repo_path_; }
 
-std::vector<FilePath> FileManager::get_symlinks_in_category(const std::string &category_name) const
+std::set<std::string> FileManager::get_symlink_names_in_category(const std::string &category_name) const
 {
-    std::vector<FilePath> paths;
+    std::set<std::string> names;
     for (const auto &entry : std::filesystem::directory_iterator(repo_path_ / category_name))
     {
-        paths.push_back(entry.path());
+        std::string name = entry.path().filename().string();
+#ifdef WIN32
+        names.insert(name.substr(0, name.size() - 4));
+#else
+        names.insert(name);
+#endif
     }
-    return paths;
+    return names;
+}
+
+std::set<FileTag> FileManager::get_category_dir_names_in_repo() const
+{
+    std::set<FileTag> tags;
+    for (const auto &entry : std::filesystem::directory_iterator(repo_path_))
+    {
+        if (std::filesystem::is_directory(entry.path()))
+        {
+            tags.insert(entry.path().filename().string()); 
+        }
+    }
+    return tags;
 }

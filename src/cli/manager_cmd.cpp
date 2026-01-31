@@ -8,10 +8,10 @@ CommandError ManagerCmd::execute()
 {
     try
     {
-        if (!create_flag_ && (tag_or_path_.empty() || (tags_.empty() && paths_.empty())))
+        if ((create_flag_ && (!tag_or_path_.empty() || !tags_.empty() || !paths_.empty())) ||
+            (!tags_.empty() && !paths_.empty()) || (tag_or_path_.size() > 1 && (!paths_.empty() || !tags_.empty())))
         {
-            return {ErrorCode::InvalidArgs_ConflictOption,
-                    "[Error]Missing parameter! Use: tag -p path... or path -t tag...\n"};
+            return {ErrorCode::InvalidArgs_ConflictOption, "[Error]ConflictOption\n"};
         }
 
         std::string message;
@@ -48,79 +48,110 @@ CommandError ManagerCmd::execute()
         {
             return {ErrorCode::InvalidArgs_InvalidPath, "[Error]The path does not point to the repository\n"};
         }
+
         auto manager = create_manager();
-        if (!tags_.empty())
+
+        if (!tags_.empty() && tag_or_path_.size() == 1)
         {
             if (remove_flag_)
             {
                 for (const auto &tag : tags_)
                 {
-                    if (!manager.remove_tag_from_file(tag_or_path_, tag))
-                    {
-                        if (!manager.save())
-                        {
-                            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
-                        }
-                        return {ErrorCode::Business_RemoveAssociationFailed, message + "[Error]Failed to remove tag (" +
-                                                                                 tag + ") from file: " + tag_or_path_ +
-                                                                                 "\n"};
-                    }
-                    message += "[Removed]" + tag_or_path_ + ": " + tag + '\n';
-                }
-            }
-            else
-            {
-                for (const auto &tag : tags_)
-                {
-                    if (!manager.assign_tag_to_file(tag_or_path_, tag))
-                    {
-                        if (!manager.save())
-                        {
-                            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
-                        }
-                        return {ErrorCode::Business_AssignTagFailed,
-                                message + "[Error]Failed to assign tag (" + tag + ") to file: " + tag_or_path_ + "\n"};
-                    }
-                    message += "[New]" + tag_or_path_ + ": " + tag + '\n';
-                }
-            }
-        }
-        else
-        {
-            if (remove_flag_)
-            {
-                for (const auto &path : paths_)
-                {
-                    if (!manager.remove_tag_from_file(path, tag_or_path_))
+                    if (!manager.remove_tag_from_file(tag_or_path_[0], tag))
                     {
                         if (!manager.save())
                         {
                             return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
                         }
                         return {ErrorCode::Business_RemoveAssociationFailed,
-                                "Failed to remove tag (" + tag_or_path_ + ") from file: " + path + "\n"};
+                                message + "[Error]Failed to remove tag (" + tag + ") from file: " + tag_or_path_[0] +
+                                    "\n"};
                     }
-                    message += "[Removed]" + path + ": " + tag_or_path_ + '\n';
+                    message += "[Removed]" + tag_or_path_[0] + ": " + tag + '\n';
+                }
+            }
+            else
+            {
+                for (const auto &tag : tags_)
+                {
+                    if (!manager.assign_tag_to_file(tag_or_path_[0], tag))
+                    {
+                        if (!manager.save())
+                        {
+                            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+                        }
+                        return {ErrorCode::Business_AssignTagFailed, message + "[Error]Failed to assign tag (" + tag +
+                                                                         ") to file: " + tag_or_path_[0] + "\n"};
+                    }
+                    message += "[New]" + tag_or_path_[0] + ": " + tag + '\n';
+                }
+            }
+        }
+        else if (!paths_.empty() && tag_or_path_.size() == 1)
+        {
+            if (remove_flag_)
+            {
+                for (const auto &path : paths_)
+                {
+                    if (!manager.remove_tag_from_file(path, tag_or_path_[0]))
+                    {
+                        if (!manager.save())
+                        {
+                            return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
+                        }
+                        return {ErrorCode::Business_RemoveAssociationFailed,
+                                "Failed to remove tag (" + tag_or_path_[0] + ") from file: " + path + "\n"};
+                    }
+                    message += "[Removed]" + path + ": " + tag_or_path_[0] + '\n';
                 }
             }
             else
             {
                 for (const auto &path : paths_)
                 {
-                    if (!manager.assign_tag_to_file(path, tag_or_path_))
+                    if (!manager.assign_tag_to_file(path, tag_or_path_[0]))
                     {
                         if (!manager.save())
                         {
                             return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};
                         }
-                        return {ErrorCode::Business_AssignTagFailed,
-                                message + "[Error]Failed to assign tag (" + tag_or_path_ + ") to file: " + path + "\n"};
+                        return {ErrorCode::Business_AssignTagFailed, message + "[Error]Failed to assign tag (" +
+                                                                         tag_or_path_[0] + ") to file: " + path + "\n"};
                     }
-                    message += "[New]" + path + ": " + tag_or_path_ + '\n';
+                    message += "[New]" + path + ": " + tag_or_path_[0] + '\n';
                 }
             }
         }
 
+        else if (tag_or_path_.size() > 0)
+        {
+            auto result = manager.get_paths_with_tags(tag_or_path_);
+            for (const auto &path : result)
+            {
+                message += path.string() + '\n';
+            }
+            return {ErrorCode::Success, message};
+        }
+        else if (!paths_.empty())
+        {
+            auto result = manager.get_tags_with_paths(paths_);
+            int cnt = 0;
+            for (const auto &path : result)
+            {
+                cnt++;
+                message += path + ' ';
+                if (cnt % 5 == 0)
+                {
+                    message += '\n';    
+                }
+            }
+            if (cnt % 5)
+            {
+                message += '\n';    
+            }
+            return {ErrorCode::Success, message}; 
+        }
+            
         if (!manager.save())
         {
             return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};

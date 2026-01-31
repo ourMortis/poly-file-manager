@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <set>
 
 #ifdef _WIN32
 #include "windows_shortcut_creator.hpp"
@@ -36,7 +37,8 @@ class FileManager
     /// @returns The absolute path of the symbolic link, or the .lnk shortcut path on Windows
     FilePath get_symlink_path(const std::string &category_name, const FilePath &target_path) const noexcept;
     /// @returns All paths in the category folder
-    std::vector<FilePath> get_symlinks_in_category(const std::string &category_name) const;
+    std::set<std::string> get_symlink_names_in_category(const std::string &category_name) const;
+    std::set<FileTag> get_category_dir_names_in_repo() const;
 };
 
 #endif // FILE_SYSTEM_ORGANIZER_H

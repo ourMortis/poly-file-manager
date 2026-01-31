@@ -6,6 +6,7 @@
 #include "data_manager.hpp"
 #include "file_manager.hpp"
 #include <vector>
+#include <algorithm>
 
 class PolyFileManager
 {
@@ -44,9 +45,16 @@ class PolyFileManager
     std::vector<FileTag> get_tags_for_file(const FilePath &path) const;
     std::vector<FilePath> get_paths_with_tag(const FileTag &tag) const;
 
+    std::set<FilePath> get_paths_with_tags(const std::vector<FileTag> &tags) const;
+    std::set<FileTag> get_tags_with_paths(const std::vector<FileTag> &paths) const;
+
     void load(const std::filesystem::path &repo_path);
 
     bool save() const;
+
+    bool is_data_consistent_with_repository() const;
+
+    bool sync_data_with_repository();
 
     static bool is_repository(const std::filesystem::path &repo_path);
 };
