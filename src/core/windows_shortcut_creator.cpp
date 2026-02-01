@@ -61,7 +61,7 @@ bool ShortcutCreator::create(const std::filesystem::path &targetPath, const std:
             if (SUCCEEDED(hr))
             {
                 bResult = true;
-                std::cout << "Create shortcut success: " << shortcutPath << '\n';
+                //std::cout << "Create shortcut success: " << shortcutPath << '\n';
             }
             else
             {

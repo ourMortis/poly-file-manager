@@ -149,7 +149,31 @@ CommandError ManagerCmd::execute()
             {
                 message += '\n';    
             }
-            return {ErrorCode::Success, message}; 
+            return {ErrorCode::Success, message};
+        }
+        else if (check_consistency_flag_)
+        {
+            if (manager.is_data_consistent_with_repository())
+            {
+                message += "The content of repository is consistent with data\n";
+            }
+            else
+            {
+                message += "[Warning]Inconsistent content was found, use option \"-s\" to synchronize content\n";
+            }
+            return {ErrorCode::Success, message};
+        }
+        else if (sync_repo_with_data_flag_)
+        {
+            if (manager.sync_data_with_repository())
+            {
+                message += "Synchronization successful\n";
+            }
+            else
+            {
+                message += "[Error]Synchronization failed\n";
+            }
+            return {ErrorCode::Success, message};
         }
             
         if (!manager.save())

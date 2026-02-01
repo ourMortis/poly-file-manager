@@ -5,6 +5,7 @@
 #include "tag_cmd.hpp"
 #include <algorithm>
 #include <filesystem>
+#include <utility>
 
 namespace poly::cli
 {
@@ -24,7 +25,20 @@ void CliParser::init_cli() noexcept
     app_.add_option("-t,--tag", tags_)->expected(1, 99);
     app_.add_option("-p,--path", paths_)->expected(1, 99)->check(CLI::ExistingPath)->excludes("-t");
     app_.add_flag("-c,--create", create_flag_)->excludes("-t")->excludes("-p")->excludes("path_or_tag");
-
+    app_.add_flag("--check", check_consistency_flag_, "Check the consistensy between data and repository")
+        ->excludes("-c")
+        ->excludes("-t")
+        ->excludes("-p")
+        ->excludes("path_or_tag")
+        ->excludes("-r");
+    app_.add_flag("-s,--sync", sync_repo_with_data_flag_, "Synchronize actual content of repository to data")
+        ->excludes("-c")
+        ->excludes("-t")
+        ->excludes("-p")
+        ->excludes("path_or_tag")
+        ->excludes("-r")
+        ->excludes("--check");
+    
     auto *tag_cmd = app_.add_subcommand("tag", "Manage tags");
     tag_cmd->add_option("-a,--add", tag_add_)->expected(1, 99);
     tag_cmd->add_option("-r,--remove", tag_remove_)->expected(1, 99);
@@ -67,7 +81,9 @@ std::unique_ptr<Cmd> CliParser::parse()
         else
         {
             return std::make_unique<ManagerCmd>(std::move(repo_path), std::move(tags_), std::move(paths_),
-                                                std::move(tag_or_path_), remove_flag_, create_flag_);
+                                                std::move(tag_or_path_), std::move(remove_flag_),
+                                                std::move(create_flag_), std::move(check_consistency_flag_),
+                                                std::move(sync_repo_with_data_flag_));
         }
     }
     catch (const CLI::ParseError &e)

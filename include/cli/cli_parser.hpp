@@ -35,6 +35,8 @@ private:
     std::vector<std::string> tag_or_path_;
     bool remove_flag_ = false;
     bool create_flag_ = false;
+    bool check_consistency_flag_ = false;
+    bool sync_repo_with_data_flag_ = false;
 
     void init_cli() noexcept;
 };
