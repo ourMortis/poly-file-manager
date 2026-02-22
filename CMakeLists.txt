@@ -37,3 +37,4 @@ add_executable(pfm src/cli/main.cpp src/core/poly_file_manager.cpp src/core/data
     target_link_libraries(pfm PRIVATE ole32 shell32)
 endif()
 
+add_executable(bidirectional_map_test test/bidirectional_map_test.cpp)

@@ -19,7 +19,8 @@ class FileManager
 
   public:
     FileManager(const FilePath &path);
-    ~FileManager() = default;
+
+    //bool create_repo(const FilePath &repo_path);
 
     bool create_category_dirs(const std::vector<std::string> &category_names) const;
     /// @returns The number of removed files, including the folder
