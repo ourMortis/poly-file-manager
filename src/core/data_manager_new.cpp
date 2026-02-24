@@ -1,6 +1,6 @@
 #include "data_manager_new.hpp"
 
-DataManagerNew::DataManagerNew(const FileTagData &data)
+DataManager::DataManager(const FileTagData &data)
 {
     for (const auto &tag : data.index_to_tag)
     {
@@ -21,7 +21,7 @@ DataManagerNew::DataManagerNew(const FileTagData &data)
 
 
 
-FileTagData DataManagerNew::get_file_tag_data() const
+FileTagData DataManager::get_file_tag_data() const
 {
     FileTagData data;
     std::map<FileTag, int> tag_to_index;

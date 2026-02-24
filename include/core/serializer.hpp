@@ -1,31 +1,34 @@
 #ifndef SERIALIZER_H
 #define SERIALIZER_H
 
-#include <string>
+#include "common_types.hpp"
+#include "tool.hpp"
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
-#include "common_types.hpp"
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
 class Serializer
 {
-private:
-    const std::string config_file_path = ".poly_file_manager";
+  private:
     FilePath repo_path_;
+    FilePath data_file_name_;
 
-#ifdef _WIN32
-    bool set_file_hidden(const std::filesystem::path &path) const;
-    bool remove_file_hidden(const std::filesystem::path &path) const;
-#endif
+  public:
+    Serializer() = default;
+    Serializer(const FilePath &repo_path, const FilePath &data_file_name)
+        : repo_path_(repo_path), data_file_name_(data_file_name)
+    {
+    }
 
-public:
-    Serializer(const FilePath &repo_path);
-    ~Serializer() = default;
+    void set_repo_path(FilePath path) noexcept { repo_path_ = path; }
+    void set_data_file_name(FilePath path) noexcept { data_file_name_ = path; }
 
-    void set_repo_path(FilePath path) noexcept;
-    FilePath get_repo_path() const noexcept;
+    FilePath get_repo_path() const noexcept { return repo_path_; }
+    FilePath get_data_file_name() const noexcept { return data_file_name_; }
 
     json data_to_json(const FileTagData &data) const;
 

@@ -5,14 +5,14 @@
 #include "common_types.hpp"
 #include <set>
 
-class DataManagerNew
+class DataManager
 {
   private:
     BiMap<FileTag, FilePath> tag_path_map_;
 
   public:
-    DataManagerNew() = default;
-    DataManagerNew(const FileTagData &data);
+    DataManager() = default;
+    DataManager(const FileTagData &data);
     FileTagData get_file_tag_data() const;
 
     bool create_tag(const FileTag &tag) { return tag_path_map_.insert_T1(tag); }

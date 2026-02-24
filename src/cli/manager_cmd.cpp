@@ -142,12 +142,12 @@ CommandError ManagerCmd::execute()
                 message += path + ' ';
                 if (cnt % 5 == 0)
                 {
-                    message += '\n';    
+                    message += '\n';
                 }
             }
             if (cnt % 5)
             {
-                message += '\n';    
+                message += '\n';
             }
             return {ErrorCode::Success, message};
         }
@@ -175,7 +175,7 @@ CommandError ManagerCmd::execute()
             }
             return {ErrorCode::Success, message};
         }
-            
+
         if (!manager.save())
         {
             return {ErrorCode::Business_SaveResultFailed, "[Error]Failed to save result\n"};

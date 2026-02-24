@@ -5,11 +5,9 @@ project(poly_file_manager LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(./include/core ./include/cli)
+include_directories(./include/core ./include/cli ./include/utils)
 
-# set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # add_executable(data_manager_test1 test/data_manager_test1.cpp src/core/data_manager.cpp)
 
@@ -33,8 +31,10 @@ include_directories(./include/core ./include/cli)
 # endif()
 
 if(WIN32)
-add_executable(pfm src/cli/main.cpp src/core/poly_file_manager.cpp src/core/data_manager.cpp src/core/file_manager.cpp src/core/serializer.cpp src/core/windows_shortcut_creator.cpp src/cli/cli_parser.cpp src/cli/manager_cmd.cpp src/cli/tag_cmd.cpp src/cli/path_cmd.cpp)
+add_executable(pfm src/cli/main.cpp src/core/poly_file_manager.cpp src/core/data_manager_new.cpp src/core/file_manager.cpp src/core/serializer.cpp src/cli/cli_parser.cpp src/cli/manager_cmd.cpp src/cli/tag_cmd.cpp src/cli/path_cmd.cpp src/utils/tool.cpp)
     target_link_libraries(pfm PRIVATE ole32 shell32)
 endif()
 
-add_executable(bidirectional_map_test test/bidirectional_map_test.cpp)
+# add_executable(bidirectional_map_test test/bidirectional_map_test.cpp)
+
+# add_executable(data_manager_new_test test/data_manager_new_test.cpp src/core/data_manager_new.cpp)
