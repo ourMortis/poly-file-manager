@@ -2,41 +2,48 @@
 #define SERIALIZER_H
 
 #include "common_types.hpp"
-#include "tool.hpp"
-#include <cstdio>
+
 #include <filesystem>
-#include <fstream>
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
+/**
+ * @brief Persists a FileTagData relation to a JSON data file.
+ *
+ * Responsibilities are split into two clearly separated groups:
+ *   - stateless conversion between the domain object (FileTagData) and json;
+ *   - stateful file persistence (read/write the data file), including the
+ *     Windows hidden-attribute handling for the data file.
+ */
 class Serializer
 {
+  public:
+    explicit Serializer(const FilePath &repo_path, const FilePath &data_file_name);
+
+    [[nodiscard]] const FilePath &repo_path() const noexcept;
+    [[nodiscard]] const FilePath &data_file_name() const noexcept;
+    [[nodiscard]] FilePath data_file_path() const;
+
+    // ----- Pure conversion between FileTagData and json (stateless) ----------
+
+    [[nodiscard]] static json to_json(const FileTagData &data);
+    [[nodiscard]] static FileTagData from_json(const json &root);
+
+    // ----- File persistence ---------------------------------------------------
+
+    bool save(const FileTagData &data) const;
+    [[nodiscard]] FileTagData load() const;
+
   private:
     FilePath repo_path_;
     FilePath data_file_name_;
 
-  public:
-    Serializer() = default;
-    Serializer(const FilePath &repo_path, const FilePath &data_file_name)
-        : repo_path_(repo_path), data_file_name_(data_file_name)
-    {
-    }
-
-    void set_repo_path(FilePath path) noexcept { repo_path_ = path; }
-    void set_data_file_name(FilePath path) noexcept { data_file_name_ = path; }
-
-    FilePath get_repo_path() const noexcept { return repo_path_; }
-    FilePath get_data_file_name() const noexcept { return data_file_name_; }
-
-    json data_to_json(const FileTagData &data) const;
-
-    json file_to_json() const;
-
-    bool serialize_to_file(const FileTagData &data) const;
-
-    FileTagData deserialize_from_file() const;
+#ifdef _WIN32
+    static bool set_hidden(const FilePath &path);
+    static bool clear_hidden(const FilePath &path);
+#endif
 };
 
 #endif // SERIALIZER_H

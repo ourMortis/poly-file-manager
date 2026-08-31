@@ -5,302 +5,339 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <utility>
 
-template <typename T1, typename T2> class BiMap
+/**
+ * @brief A bidirectional, many-to-many associative container.
+ *
+ * Maintains two independent registries of unique values (a "left" domain and
+ * a "right" domain) together with a relation between them. Every inserted value
+ * is held by a stable shared_ptr that serves as its identity across the
+ * container, so that replacing (renaming) a value keeps its existing relations
+ * intact without rebuilding them.
+ *
+ * @tparam Left  Type of the left-hand values.
+ * @tparam Right Type of the right-hand values.
+ */
+template <typename Left, typename Right> class BiMap
 {
-    using T1ptr = std::shared_ptr<T1>;
-    using T2ptr = std::shared_ptr<T2>;
+    using LeftPtr = std::shared_ptr<Left>;
+    using RightPtr = std::shared_ptr<Right>;
 
   public:
-    // size_t count_associated(const T1 &t1) const noexcept { return count_associated_T1_impl(t1); }
-    // size_t count_associated(const T2 &t2) const noexcept { return count_associated_T2_impl(t2); }
-    // bool insert(const T1 &t1) { return insert_T1_impl(t1); }
-    // bool insert(const T2 &t2) { return insert_T2_impl(t2); }
-    // bool replace(const T1 &old_t1, const T1 &new_t1) { return replace_T1_impl(old_t1, new_t1); }
-    // bool replace(const T2 &old_t2, const T2 &new_t2) { return replace_T2_impl(old_t2, new_t2); }
-    // bool erase(const T1 &t1) { return erase_T1_impl(t1); }
-    // bool erase(const T2 &t2) { return erase_T2_impl(t2); }
-    // std::set<T1> get_associated(const T2 &t2) { return get_associated_T2_impl(t2); }
-    // std::set<T2> get_associated(const T1 &t1) { return get_associated_T1_impl(t1); }
+    // ----- Left-side membership -------------------------------------------
 
-    std::set<T1> get_all_T1() const;
-    std::set<T2> get_all_T2() const;
-    bool associate(const T1 &t1, const T2 &t2);
-    bool unassociate(const T1 &t1, const T2 &t2);
-    size_t count_T1() const noexcept { return T1_registry_.size(); }
-    size_t count_T2() const noexcept { return T2_registry_.size(); }
-    bool contains_T1(const T1 &t1) const noexcept { return T1_registry_.find(t1) != T1_registry_.end(); }
-    bool contains_T2(const T2 &t2) const noexcept { return T2_registry_.find(t2) != T2_registry_.end(); }
-    bool contains_association(const T1 &t1, const T2 &t2) const noexcept;
-    size_t count_associated_T1(const T1 &t1) const noexcept { return count_associated_T1_impl(t1); }
-    size_t count_associated_T2(const T2 &t2) const noexcept { return count_associated_T2_impl(t2); }
-    bool insert_T1(const T1 &t1) { return insert_T1_impl(t1); }
-    bool insert_T2(const T2 &t2) { return insert_T2_impl(t2); }
-    bool replace_T1(const T1 &old_t1, const T1 &new_t1) { return replace_T1_impl(old_t1, new_t1); }
-    bool replace_T2(const T2 &old_t2, const T2 &new_t2) { return replace_T2_impl(old_t2, new_t2); }
-    bool erase_T1(const T1 &t1) { return erase_T1_impl(t1); }
-    bool erase_T2(const T2 &t2) { return erase_T2_impl(t2); }
-    std::set<T1> get_associated_T2(const T2 &t2) const { return get_associated_T2_impl(t2); }
-    std::set<T2> get_associated_T1(const T1 &t1) const { return get_associated_T1_impl(t1); }
+    bool insert_left(const Left &left);
+    bool replace_left(const Left &old_left, const Left &new_left);
+    bool erase_left(const Left &left);
+
+    [[nodiscard]] bool contains_left(const Left &left) const noexcept { return left_registry_.contains(left); }
+    [[nodiscard]] size_t count_left() const noexcept { return left_registry_.size(); }
+    [[nodiscard]] std::set<Left> get_all_left() const;
+
+    // ----- Right-side membership ------------------------------------------
+
+    bool insert_right(const Right &right);
+    bool replace_right(const Right &old_right, const Right &new_right);
+    bool erase_right(const Right &right);
+
+    [[nodiscard]] bool contains_right(const Right &right) const noexcept { return right_registry_.contains(right); }
+    [[nodiscard]] size_t count_right() const noexcept { return right_registry_.size(); }
+    [[nodiscard]] std::set<Right> get_all_right() const;
+
+    // ----- Relations -------------------------------------------------------
+
+    bool associate(const Left &left, const Right &right);
+    bool unassociate(const Left &left, const Right &right);
+    [[nodiscard]] bool contains_association(const Left &left, const Right &right) const noexcept;
+
+    /// @return Number of right values associated with the given left value.
+    [[nodiscard]] size_t count_associated_right(const Left &left) const noexcept;
+    /// @return Number of left values associated with the given right value.
+    [[nodiscard]] size_t count_associated_left(const Right &right) const noexcept;
+
+    /// @return All right values associated with the given left value.
+    [[nodiscard]] std::set<Right> get_associated_right(const Left &left) const;
+    /// @return All left values associated with the given right value.
+    [[nodiscard]] std::set<Left> get_associated_left(const Right &right) const;
 
   private:
-    std::map<T1, T1ptr> T1_registry_;
-    std::map<T2, T2ptr> T2_registry_;
+    std::map<Left, LeftPtr> left_registry_;
+    std::map<Right, RightPtr> right_registry_;
+    std::map<LeftPtr, std::set<RightPtr>> left_to_right_;
+    std::map<RightPtr, std::set<LeftPtr>> right_to_left_;
 
-    std::map<T1ptr, std::set<T2ptr>> T1_to_T2_map_;
-    std::map<T2ptr, std::set<T1ptr>> T2_to_T1_map_;
-
-    inline T1ptr get_T1_sptr(const T1 &t1) const noexcept;
-    inline T2ptr get_T2_sptr(const T2 &t2) const noexcept;
-
-    size_t count_associated_T1_impl(const T1 &t1) const noexcept;
-    size_t count_associated_T2_impl(const T2 &t2) const noexcept;
-
-    bool insert_T1_impl(const T1 &t1);
-    bool replace_T1_impl(const T1 &old_t1, const T1 &new_t1);
-    bool erase_T1_impl(const T1 &t1);
-
-    bool insert_T2_impl(const T2 &t2);
-    bool replace_T2_impl(const T2 &old_t2, const T2 &new_t2);
-    bool erase_T2_impl(const T2 &t2);
-
-    std::set<T1> get_associated_T2_impl(const T2 &t2) const;
-    std::set<T2> get_associated_T1_impl(const T1 &t1) const;
+    [[nodiscard]] LeftPtr get_left_sptr(const Left &left) const noexcept;
+    [[nodiscard]] RightPtr get_right_sptr(const Right &right) const noexcept;
 };
 
-template <typename T1, typename T2> size_t BiMap<T1, T2>::count_associated_T1_impl(const T1 &t1) const noexcept
+template <typename Left, typename Right> bool BiMap<Left, Right>::insert_left(const Left &left)
 {
-    auto it = T1_registry_.find(t1);
-    if (it == T1_registry_.end())
-    {
-        return 0;
-    }
-    auto t1_ptr = it->second;
-    auto assoc_it = T1_to_T2_map_.find(t1_ptr);
-    if (assoc_it == T1_to_T2_map_.end())
-    {
-        return 0;
-    }
-    return assoc_it->second.size();
-}
-
-template <typename T1, typename T2> size_t BiMap<T1, T2>::count_associated_T2_impl(const T2 &t2) const noexcept
-{
-    auto it = T2_registry_.find(t2);
-    if (it == T2_registry_.end())
-    {
-        return 0;
-    }
-    auto t2_ptr = it->second;
-    auto assoc_it = T2_to_T1_map_.find(t2_ptr);
-    if (assoc_it == T2_to_T1_map_.end())
-    {
-        return 0;
-    }
-    return assoc_it->second.size();
-}
-
-template <typename T1, typename T2> bool BiMap<T1, T2>::contains_association(const T1 &t1, const T2 &t2) const noexcept
-{
-    auto t1_ptr = get_T1_sptr(t1);
-    auto t2_ptr = get_T2_sptr(t2);
-    if (!t1_ptr || !t2_ptr)
+    auto [it, inserted] = left_registry_.try_emplace(left);
+    if (!inserted)
     {
         return false;
     }
-    auto it = T1_to_T2_map_.find(t1_ptr);
-    if (it == T1_to_T2_map_.end())
-    {
-        return false;
-    }
-    return it->second.find(t2_ptr) != it->second.end();
-}
-
-template <typename T1, typename T2> bool BiMap<T1, T2>::insert_T1_impl(const T1 &t1)
-{
-    if (contains_T1(t1))
-    {
-        return false;
-    }
-    T1_registry_[t1] = std::make_shared<T1>(t1);
+    it->second = std::make_shared<Left>(left);
     return true;
 }
 
-template <typename T1, typename T2> bool BiMap<T1, T2>::replace_T1_impl(const T1 &old_t1, const T1 &new_t1)
+template <typename Left, typename Right> bool BiMap<Left, Right>::replace_left(const Left &old_left, const Left &new_left)
 {
-    if (!contains_T1(old_t1) || contains_T1(new_t1))
+    if (!left_registry_.contains(old_left) || left_registry_.contains(new_left))
     {
         return false;
     }
-    auto old_ptr = get_T1_sptr(old_t1);
-    T1_registry_.erase(old_t1);
-    T1_registry_[new_t1] = old_ptr;
+    const auto old_ptr = get_left_sptr(old_left);
+    *old_ptr = new_left; // keep the shared identity, but make it reflect the new value
+    auto nh = left_registry_.extract(old_left);
+    nh.key() = new_left;
+    left_registry_.insert(std::move(nh));
     return true;
 }
 
-template <typename T1, typename T2> bool BiMap<T1, T2>::erase_T1_impl(const T1 &t1)
+template <typename Left, typename Right> bool BiMap<Left, Right>::erase_left(const Left &left)
 {
-    auto it = T1_registry_.find(t1);
-    if (it == T1_registry_.end())
+    auto it = left_registry_.find(left);
+    if (it == left_registry_.end())
     {
         return false;
     }
-    auto t1_ptr = it->second;
-    T1_registry_.erase(it);
-    T1_to_T2_map_.erase(t1_ptr);
-    for (auto &pair : T2_to_T1_map_)
+    auto left_ptr = it->second;
+    left_registry_.erase(it);
+
+    auto assoc_it = left_to_right_.find(left_ptr);
+    if (assoc_it != left_to_right_.end())
     {
-        pair.second.erase(t1_ptr);
+        for (const auto &right_ptr : assoc_it->second)
+        {
+            auto rev = right_to_left_.find(right_ptr);
+            if (rev != right_to_left_.end())
+            {
+                rev->second.erase(left_ptr);
+                if (rev->second.empty())
+                {
+                    right_to_left_.erase(rev);
+                }
+            }
+        }
+        left_to_right_.erase(assoc_it);
     }
     return true;
 }
 
-template <typename T1, typename T2> std::set<T1> BiMap<T1, T2>::get_all_T1() const
+template <typename Left, typename Right> std::set<Left> BiMap<Left, Right>::get_all_left() const
 {
-    std::set<T1> result;
-    for (const auto &pair : T1_registry_)
+    std::set<Left> result;
+    for (const auto &[value, _] : left_registry_)
     {
-        result.insert(pair.first);
+        result.insert(value);
     }
     return result;
 }
 
-template <typename T1, typename T2> bool BiMap<T1, T2>::insert_T2_impl(const T2 &t2)
+template <typename Left, typename Right> bool BiMap<Left, Right>::insert_right(const Right &right)
 {
-    if (contains_T2(t2))
+    auto [it, inserted] = right_registry_.try_emplace(right);
+    if (!inserted)
     {
         return false;
     }
-    T2_registry_[t2] = std::make_shared<T2>(t2);
+    it->second = std::make_shared<Right>(right);
     return true;
 }
 
-template <typename T1, typename T2> bool BiMap<T1, T2>::replace_T2_impl(const T2 &old_t2, const T2 &new_t2)
+template <typename Left, typename Right>
+bool BiMap<Left, Right>::replace_right(const Right &old_right, const Right &new_right)
 {
-    if (!contains_T2(old_t2) || contains_T2(new_t2))
+    if (!right_registry_.contains(old_right) || right_registry_.contains(new_right))
     {
         return false;
     }
-    auto old_ptr = get_T2_sptr(old_t2);
-    T2_registry_.erase(old_t2);
-    T2_registry_[new_t2] = old_ptr;
+    const auto old_ptr = get_right_sptr(old_right);
+    *old_ptr = new_right; // keep the shared identity, but make it reflect the new value
+    auto nh = right_registry_.extract(old_right);
+    nh.key() = new_right;
+    right_registry_.insert(std::move(nh));
     return true;
 }
 
-template <typename T1, typename T2> bool BiMap<T1, T2>::erase_T2_impl(const T2 &t2)
+template <typename Left, typename Right> bool BiMap<Left, Right>::erase_right(const Right &right)
 {
-    auto it = T2_registry_.find(t2);
-    if (it == T2_registry_.end())
+    auto it = right_registry_.find(right);
+    if (it == right_registry_.end())
     {
         return false;
     }
-    auto t2_ptr = it->second;
-    T2_registry_.erase(it);
-    T2_to_T1_map_.erase(t2_ptr);
-    for (auto &pair : T1_to_T2_map_)
+    auto right_ptr = it->second;
+    right_registry_.erase(it);
+
+    auto assoc_it = right_to_left_.find(right_ptr);
+    if (assoc_it != right_to_left_.end())
     {
-        pair.second.erase(t2_ptr);
+        for (const auto &left_ptr : assoc_it->second)
+        {
+            auto rev = left_to_right_.find(left_ptr);
+            if (rev != left_to_right_.end())
+            {
+                rev->second.erase(right_ptr);
+                if (rev->second.empty())
+                {
+                    left_to_right_.erase(rev);
+                }
+            }
+        }
+        right_to_left_.erase(assoc_it);
     }
     return true;
 }
 
-template <typename T1, typename T2> std::set<T2> BiMap<T1, T2>::get_all_T2() const
+template <typename Left, typename Right> std::set<Right> BiMap<Left, Right>::get_all_right() const
 {
-    std::set<T2> result;
-    for (const auto &pair : T2_registry_)
+    std::set<Right> result;
+    for (const auto &[value, _] : right_registry_)
     {
-        result.insert(pair.first);
+        result.insert(value);
     }
     return result;
 }
 
-template <typename T1, typename T2> bool BiMap<T1, T2>::associate(const T1 &t1, const T2 &t2)
+template <typename Left, typename Right> bool BiMap<Left, Right>::associate(const Left &left, const Right &right)
 {
-    auto t1_ptr = get_T1_sptr(t1);
-    auto t2_ptr = get_T2_sptr(t2);
-    if (!t1_ptr || !t2_ptr)
+    auto left_ptr = get_left_sptr(left);
+    auto right_ptr = get_right_sptr(right);
+    if (!left_ptr || !right_ptr)
     {
         return false;
     }
-    T1_to_T2_map_[t1_ptr].insert(t2_ptr);
-    T2_to_T1_map_[t2_ptr].insert(t1_ptr);
+    auto &set = left_to_right_[left_ptr];
+    if (set.contains(right_ptr))
+    {
+        return true; // already associated: idempotent
+    }
+    set.insert(right_ptr);
+    right_to_left_[right_ptr].insert(left_ptr);
     return true;
 }
 
-template <typename T1, typename T2> bool BiMap<T1, T2>::unassociate(const T1 &t1, const T2 &t2)
+template <typename Left, typename Right> bool BiMap<Left, Right>::unassociate(const Left &left, const Right &right)
 {
-    auto t1_ptr = get_T1_sptr(t1);
-    auto t2_ptr = get_T2_sptr(t2);
-    if (!t1_ptr || !t2_ptr)
+    auto left_ptr = get_left_sptr(left);
+    auto right_ptr = get_right_sptr(right);
+    if (!left_ptr || !right_ptr)
     {
         return false;
     }
-    T1_to_T2_map_[t1_ptr].erase(t2_ptr);
-    T2_to_T1_map_[t2_ptr].erase(t1_ptr);
+    auto fwd = left_to_right_.find(left_ptr);
+    if (fwd == left_to_right_.end() || fwd->second.erase(right_ptr) == 0)
+    {
+        return false;
+    }
+    auto rev = right_to_left_.find(right_ptr);
+    if (rev != right_to_left_.end())
+    {
+        rev->second.erase(left_ptr);
+        if (rev->second.empty())
+        {
+            right_to_left_.erase(rev);
+        }
+    }
+    if (fwd->second.empty())
+    {
+        left_to_right_.erase(fwd);
+    }
     return true;
 }
 
-template <typename T1, typename T2> std::set<T1> BiMap<T1, T2>::get_associated_T2_impl(const T2 &t2) const
+template <typename Left, typename Right>
+bool BiMap<Left, Right>::contains_association(const Left &left, const Right &right) const noexcept
 {
-    std::set<T1> result;
-    auto t2_ptr = get_T2_sptr(t2);
-    if (!t2_ptr)
+    auto left_ptr = get_left_sptr(left);
+    auto right_ptr = get_right_sptr(right);
+    if (!left_ptr || !right_ptr)
     {
-        return result;
+        return false;
     }
-    auto it = T2_to_T1_map_.find(t2_ptr);
-    if (it == T2_to_T1_map_.end())
+    auto it = left_to_right_.find(left_ptr);
+    return it != left_to_right_.end() && it->second.contains(right_ptr);
+}
+
+template <typename Left, typename Right>
+size_t BiMap<Left, Right>::count_associated_right(const Left &left) const noexcept
+{
+    auto left_ptr = get_left_sptr(left);
+    if (!left_ptr)
     {
-        return result;
+        return 0;
     }
-    for (const auto &t1_ptr : it->second)
+    auto it = left_to_right_.find(left_ptr);
+    return it == left_to_right_.end() ? 0 : it->second.size();
+}
+
+template <typename Left, typename Right>
+size_t BiMap<Left, Right>::count_associated_left(const Right &right) const noexcept
+{
+    auto right_ptr = get_right_sptr(right);
+    if (!right_ptr)
     {
-        result.insert(*t1_ptr);
+        return 0;
+    }
+    auto it = right_to_left_.find(right_ptr);
+    return it == right_to_left_.end() ? 0 : it->second.size();
+}
+
+template <typename Left, typename Right> std::set<Right> BiMap<Left, Right>::get_associated_right(const Left &left) const
+{
+    auto left_ptr = get_left_sptr(left);
+    if (!left_ptr)
+    {
+        return {};
+    }
+    auto it = left_to_right_.find(left_ptr);
+    if (it == left_to_right_.end())
+    {
+        return {};
+    }
+    std::set<Right> result;
+    for (const auto &right_ptr : it->second)
+    {
+        result.insert(*right_ptr);
     }
     return result;
 }
 
-template <typename T1, typename T2> std::set<T2> BiMap<T1, T2>::get_associated_T1_impl(const T1 &t1) const
+template <typename Left, typename Right> std::set<Left> BiMap<Left, Right>::get_associated_left(const Right &right) const
 {
-    std::set<T2> result;
-    auto t1_ptr = get_T1_sptr(t1);
-    if (!t1_ptr)
+    auto right_ptr = get_right_sptr(right);
+    if (!right_ptr)
     {
-        return result;
+        return {};
     }
-    auto it = T1_to_T2_map_.find(t1_ptr);
-    if (it == T1_to_T2_map_.end())
+    auto it = right_to_left_.find(right_ptr);
+    if (it == right_to_left_.end())
     {
-        return result;
+        return {};
     }
-    for (const auto &t2_ptr : it->second)
+    std::set<Left> result;
+    for (const auto &left_ptr : it->second)
     {
-        result.insert(*t2_ptr);
+        result.insert(*left_ptr);
     }
     return result;
 }
 
-template <typename T1, typename T2>
-typename BiMap<T1, T2>::T1ptr BiMap<T1, T2>::get_T1_sptr(const T1 &t1) const noexcept
+template <typename Left, typename Right>
+typename BiMap<Left, Right>::LeftPtr BiMap<Left, Right>::get_left_sptr(const Left &left) const noexcept
 {
-    auto it = T1_registry_.find(t1);
-    if (it == T1_registry_.end())
-    {
-        return nullptr;
-    }
-    return it->second;
+    auto it = left_registry_.find(left);
+    return it == left_registry_.end() ? nullptr : it->second;
 }
 
-template <typename T1, typename T2>
-typename BiMap<T1, T2>::T2ptr BiMap<T1, T2>::get_T2_sptr(const T2 &t2) const noexcept
+template <typename Left, typename Right>
+typename BiMap<Left, Right>::RightPtr BiMap<Left, Right>::get_right_sptr(const Right &right) const noexcept
 {
-    auto it = T2_registry_.find(t2);
-    if (it == T2_registry_.end())
-    {
-        return nullptr;
-    }
-    return it->second;
+    auto it = right_registry_.find(right);
+    return it == right_registry_.end() ? nullptr : it->second;
 }
-
 
 #endif // BIDIRECTIONAL_MAP_H

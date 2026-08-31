@@ -1,240 +1,297 @@
 #include "poly_file_manager.hpp"
-#include "data_manager_new.hpp"
 
-PolyFileManager::PolyFileManager(const std::filesystem::path &repo_path, bool)
-    : file_manager(repo_path), serializer(repo_path, data_file_name), data_manager(serializer.deserialize_from_file())
+#include <algorithm>
+#include <iterator>
+#include <map>
+#include <ranges>
+#include <stdexcept>
+
+PolyFileManager::PolyFileManager(const FilePath &repo_path)
+    : file_manager(repo_path), serializer(repo_path, data_file_name), data_manager(serializer.load())
 {
-    data_manager = DataManager(serializer.deserialize_from_file());
+    if (!is_valid_repository(repo_path))
+    {
+        throw std::invalid_argument("PolyFileManager: not a valid repository");
+    }
 }
 
-PolyFileManager::PolyFileManager(const std::filesystem::path &repo_path) : PolyFileManager(repo_path, false)
+bool PolyFileManager::is_valid_repository(const FilePath &repo_path)
 {
-    if (!check_repo_path(repo_path))
-    {
-        throw std::invalid_argument("PolyFileManager: invalid repository path");
-    }
-    if (!std::filesystem::is_regular_file(repo_path / data_file_name))
-    {
-        throw std::invalid_argument("PolyFileManager: not a repository, create repository first");
-    }
+    return repo_path.is_absolute() && std::filesystem::is_directory(repo_path) &&
+           std::filesystem::is_regular_file(repo_path / data_file_name);
+}
+
+FilePath PolyFileManager::repo_path() const
+{
+    return file_manager.repo_path();
 }
 
 bool PolyFileManager::create_repository(const FilePath &repo_path)
 {
-    Serializer s = Serializer(repo_path, data_file_name);
-    return s.serialize_to_file({});
+    if (!repo_path.is_absolute() || !std::filesystem::is_directory(repo_path))
+    {
+        return false;
+    }
+    return Serializer(repo_path, data_file_name).save(FileTagData{});
+}
+
+bool PolyFileManager::is_repository(const FilePath &repo_path)
+{
+    return std::filesystem::is_regular_file(repo_path / data_file_name);
+}
+
+bool PolyFileManager::destroy_repository(const FilePath &repo_path)
+{
+    if (!is_repository(repo_path))
+    {
+        return false;
+    }
+    std::error_code ec;
+    for (auto it = std::filesystem::directory_iterator(repo_path, ec); it != std::filesystem::directory_iterator(); ++it)
+    {
+        if (ec)
+        {
+            return false;
+        }
+        if (it->is_directory(ec))
+        {
+            std::filesystem::remove_all(it->path(), ec);
+        }
+    }
+    std::filesystem::remove(repo_path / data_file_name, ec);
+    return !ec;
 }
 
 bool PolyFileManager::add_path(const FilePath &path)
 {
-    if (path.is_relative() || data_manager.contains_path(path))
-    {
-        return false;
-    }
-    return data_manager.create_path(path);
+    return path.is_absolute() && data_manager.add_path(path);
 }
 
-bool PolyFileManager::rename_path(const FilePath &old_path, const FilePath &new_path)
+bool PolyFileManager::replace_path(const FilePath &old_path, const FilePath &new_path)
 {
-    if (!data_manager.contains_path(old_path) || data_manager.contains_path(new_path))
+    if (!data_manager.has_path(old_path) || data_manager.has_path(new_path))
     {
         return false;
     }
 
-    std::set<FileTag> removed, created;
-
-    for (const auto &tag : data_manager.get_tags_for_path(old_path))
+    std::vector<FileTag> migrated;
+    for (const auto &tag : data_manager.tags_of(old_path))
     {
-        if (file_manager.remove_symlink_in_category(tag, old_path))
+        if (!file_manager.remove_link(tag, old_path) || !file_manager.create_link(tag, new_path))
         {
-            removed.insert(tag);
+            restore_links(migrated, old_path, new_path);
+            file_manager.create_link(tag, old_path); // re-create this tag's old link
+            return false;
         }
-        else
-        {
-            break;
-        }
-        if (file_manager.create_symlink_in_category(tag, new_path))
-        {
-            created.insert(tag);
-        }
-        else
-        {
-            break;
-        }
+        migrated.push_back(tag);
     }
-    if (removed.size() == data_manager.count_associated_with_path(old_path) && created.size() == removed.size())
-    {
-        data_manager.replace_path(old_path, new_path);
-        return true;
-    }
-
-    for (const auto &tag : removed)
-    {
-        data_manager.remove_tag_from_path(old_path, tag);
-    }
-    for (const auto &tag : created)
-    {
-        data_manager.assign_tag_to_path(new_path, tag);
-    }
-    return false;
+    return data_manager.replace_path(old_path, new_path);
 }
 
 bool PolyFileManager::remove_path(const FilePath &path)
 {
-    if (!data_manager.contains_path(path))
+    if (!data_manager.has_path(path))
     {
         return false;
     }
-    int num_of_tags = data_manager.count_associated_with_path(path);
-    if (num_of_tags == 0)
+
+    std::vector<FileTag> removed;
+    for (const auto &tag : data_manager.tags_of(path))
     {
-        data_manager.remove_path(path);
-        return true;
-    }
-    const auto &tags = data_manager.get_tags_for_path(path);
-    std::set<FileTag> removed;
-    for (const auto &tag : tags)
-    {
-        if (file_manager.remove_symlink_in_category(tag, path))
-        {
-            removed.insert(tag);
-        }
-        else
+        if (!file_manager.remove_link(tag, path))
         {
             break;
         }
-    }
-    if (removed.size() == data_manager.count_associated_with_path(path))
-    {
-        data_manager.remove_path(path);
-        return true;
+        removed.push_back(tag);
     }
 
-    for (const auto &tag : removed)
+    if (removed.size() != data_manager.tags_of(path).size())
     {
-        data_manager.remove_tag_from_path(path, tag);
+        for (const auto &tag : removed)
+        {
+            file_manager.create_link(tag, path);
+        }
+        return false;
     }
-    return false;
+    return data_manager.remove_path(path);
 }
 
 bool PolyFileManager::add_tag(const FileTag &tag)
 {
-    if (data_manager.contains_tag(tag) || !file_manager.create_category_dir(tag))
+    if (data_manager.has_tag(tag) || !file_manager.create_category(tag))
     {
         return false;
     }
-    data_manager.create_tag(tag);
+    if (!data_manager.add_tag(tag))
+    {
+        file_manager.remove_category(tag); // roll back the orphan directory
+        return false;
+    }
     return true;
 }
 
 bool PolyFileManager::rename_tag(const FileTag &old_tag, const FileTag &new_tag)
 {
-    if (!data_manager.contains_tag(old_tag) || data_manager.contains_tag(new_tag))
+    if (!data_manager.has_tag(old_tag) || data_manager.has_tag(new_tag) ||
+        !file_manager.rename_category(old_tag, new_tag))
     {
         return false;
     }
-    if (file_manager.rename_category_dir(old_tag, new_tag))
-    {
-        return data_manager.replace_tag(old_tag, new_tag);
-    }
-    return false;
+    return data_manager.rename_tag(old_tag, new_tag);
 }
 
 bool PolyFileManager::remove_tag(const FileTag &tag)
 {
-    if (!data_manager.contains_tag(tag))
+    if (!data_manager.has_tag(tag))
     {
         return false;
     }
-    if (file_manager.remove_category_dir(tag) == data_manager.count_associated_with_tag(tag) + 1)
+    // The category dir holds one link per associated path plus the dir itself.
+    if (file_manager.remove_category(tag) == data_manager.path_count_of(tag) + 1)
     {
-        data_manager.remove_tag(tag);
-        return true;
+        return data_manager.remove_tag(tag);
     }
     return false;
 }
 
-bool PolyFileManager::assign_tag_to_file(const FilePath &path, const FileTag &tag)
+bool PolyFileManager::assign_tag(const FilePath &path, const FileTag &tag)
 {
-    if (file_manager.create_symlink_in_category(tag, path))
-    {
-        data_manager.assign_tag_to_path(path, tag);
-        return true;
-    }
-    return false;
-}
-
-bool PolyFileManager::remove_tag_from_file(const FilePath &path, const FileTag &tag)
-{
-
-    if (file_manager.remove_symlink_in_category(tag, path))
-    {
-        data_manager.remove_tag_from_path(path, tag);
-        return true;
-    }
-    return false;
-}
-
-std::vector<FileTag> PolyFileManager::get_tags_for_file(const FilePath &path) const
-{
-    auto tag_set = data_manager.get_tags_for_path(path);
-    return std::vector<FileTag>(tag_set.begin(), tag_set.end());
-}
-std::vector<FilePath> PolyFileManager::get_paths_with_tag(const FileTag &tag) const
-{
-    auto path_set = data_manager.get_paths_with_tag(tag);
-    return std::vector<FilePath>(path_set.begin(), path_set.end());
-}
-
-std::set<FilePath> PolyFileManager::get_paths_with_tags(const std::vector<FileTag> &tags) const
-{
-    auto result = data_manager.get_paths_with_tag(tags[0]);
-    for (int i = 1; i < tags.size(); i++)
-    {
-        auto pre = std::move(result);
-        auto cur = data_manager.get_paths_with_tag(tags[i]);
-        std::set_intersection(cur.begin(), cur.end(), pre.begin(), pre.end(), std::inserter(result, result.begin()));
-    }
-    return result;
-}
-std::set<FileTag> PolyFileManager::get_tags_with_paths(const std::vector<FileTag> &paths) const
-{
-    std::set<FileTag> pre, result = data_manager.get_tags_for_path(paths[0]);
-    for (int i = 1; i < paths.size(); i++)
-    {
-        pre = std::move(result);
-        auto cur = data_manager.get_tags_for_path(paths[i]);
-        std::set_intersection(cur.begin(), cur.end(), pre.begin(), pre.end(), std::inserter(result, result.begin()));
-    }
-    return result;
-}
-
-bool PolyFileManager::is_data_consistent_with_repository() const
-{
-    auto tag_vector = data_manager.get_all_tags();
-    auto category_names_set = file_manager.get_category_dir_names_in_repo();
-    if (tag_vector.size() != category_names_set.size())
+    if (!file_manager.create_link(tag, path))
     {
         return false;
     }
-    for (const auto &name : tag_vector)
+    if (!data_manager.add_association(tag, path))
     {
-        if (category_names_set.find(name) == category_names_set.end())
+        file_manager.remove_link(tag, path); // roll back the created link
+        return false;
+    }
+    return true;
+}
+
+bool PolyFileManager::unassign_tag(const FilePath &path, const FileTag &tag)
+{
+    if (!file_manager.remove_link(tag, path))
+    {
+        return false;
+    }
+    if (!data_manager.remove_association(tag, path))
+    {
+        file_manager.create_link(tag, path); // roll back the removed link
+        return false;
+    }
+    return true;
+}
+
+std::set<FileTag> PolyFileManager::tags() const
+{
+    return data_manager.tags();
+}
+
+std::set<FilePath> PolyFileManager::paths() const
+{
+    return data_manager.paths();
+}
+
+std::set<FileTag> PolyFileManager::tags_of_file(const FilePath &path) const
+{
+    return data_manager.tags_of(path);
+}
+
+std::set<FilePath> PolyFileManager::paths_of_tag(const FileTag &tag) const
+{
+    return data_manager.paths_of(tag);
+}
+
+std::set<FilePath> PolyFileManager::paths_with_tags(const std::vector<FileTag> &tags) const
+{
+    if (tags.empty())
+    {
+        return {};
+    }
+
+    // Intersect the smallest set first so the running result shrinks quickly.
+    auto ordered = tags;
+    std::ranges::sort(ordered, [this](const FileTag &a, const FileTag &b) {
+        return data_manager.path_count_of(a) < data_manager.path_count_of(b);
+    });
+
+    std::set<FilePath> result = data_manager.paths_of(ordered.front());
+    for (auto it = std::next(ordered.begin()); it != ordered.end() && !result.empty(); ++it)
+    {
+        const auto current = data_manager.paths_of(*it);
+        std::set<FilePath> next;
+        std::ranges::set_intersection(result, current, std::inserter(next, next.end()));
+        result = std::move(next);
+    }
+    return result;
+}
+
+std::set<FileTag> PolyFileManager::tags_with_paths(const std::vector<FilePath> &paths) const
+{
+    if (paths.empty())
+    {
+        return {};
+    }
+
+    // Intersect the smallest set first so the running result shrinks quickly.
+    auto ordered = paths;
+    std::ranges::sort(ordered, [this](const FilePath &a, const FilePath &b) {
+        return data_manager.tag_count_of(a) < data_manager.tag_count_of(b);
+    });
+
+    std::set<FileTag> result = data_manager.tags_of(ordered.front());
+    for (auto it = std::next(ordered.begin()); it != ordered.end() && !result.empty(); ++it)
+    {
+        const auto current = data_manager.tags_of(*it);
+        std::set<FileTag> next;
+        std::ranges::set_intersection(result, current, std::inserter(next, next.end()));
+        result = std::move(next);
+    }
+    return result;
+}
+
+bool PolyFileManager::save() const
+{
+    return serializer.save(data_manager.to_file_tag_data());
+}
+
+FileTagData PolyFileManager::current_data() const
+{
+    return data_manager.to_file_tag_data();
+}
+
+bool PolyFileManager::restore_data(const FileTagData &data)
+{
+    data_manager = DataManager(data);
+    return sync();
+}
+
+bool PolyFileManager::is_consistent() const
+{
+    const auto tag_set = data_manager.tags();
+    const auto category_set = file_manager.categories();
+    if (tag_set.size() != category_set.size())
+    {
+        return false;
+    }
+    for (const auto &tag : tag_set)
+    {
+        if (!category_set.contains(tag))
         {
             return false;
         }
     }
-    for (const auto &tag : tag_vector)
+    for (const auto &tag : tag_set)
     {
-        auto paths = data_manager.get_paths_with_tag(tag);
-        auto symlink_names = file_manager.get_symlink_names_in_category(tag);
-        if (paths.size() != symlink_names.size())
+        const auto target_paths = data_manager.paths_of(tag);
+        const auto link_names = file_manager.link_names(tag);
+        if (target_paths.size() != link_names.size())
         {
             return false;
         }
-        for (const auto &path : paths)
+        for (const auto &path : target_paths)
         {
-            if (symlink_names.find(path.filename().string()) == symlink_names.end())
+            if (!link_names.contains(path.filename().string()))
             {
                 return false;
             }
@@ -243,34 +300,80 @@ bool PolyFileManager::is_data_consistent_with_repository() const
     return true;
 }
 
-bool PolyFileManager::sync_data_with_repository()
+bool PolyFileManager::sync()
 {
-    for (const auto &entry : std::filesystem::directory_iterator(get_repo_path()))
+    const auto repo = file_manager.repo_path();
+    std::error_code ec;
+    for (const auto &entry : std::filesystem::directory_iterator(repo, ec))
     {
-        if (std::filesystem::is_directory(entry.path()))
+        if (ec)
         {
-            if (std::filesystem::remove_all(entry.path()) < 1)
+            return false;
+        }
+        if (entry.is_directory(ec))
+        {
+            if (std::filesystem::remove_all(entry.path(), ec) < 1)
             {
                 return false;
             }
         }
     }
-    auto tags = data_manager.get_all_tags();
-    for (const auto &t : tags)
-        if (!file_manager.create_category_dir(t))
+
+    const auto all_tags = data_manager.tags();
+    for (const auto &tag : all_tags)
+    {
+        if (!file_manager.create_category(tag))
         {
             return false;
         }
+    }
+    for (const auto &tag : all_tags)
+    {
+        for (const auto &path : data_manager.paths_of(tag))
+        {
+            if (!file_manager.create_link(tag, path))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool PolyFileManager::rebuild_from_repository()
+{
+    FileTagData rebuilt;
+    std::map<FileTag, std::size_t> tag_index;
+    std::size_t index = 0;
+
+    for (const auto &category : file_manager.categories())
+    {
+        rebuilt.tags.push_back(category);
+        tag_index[category] = index++;
+    }
+
+    for (const auto &category : file_manager.categories())
+    {
+        for (const auto &link : file_manager.link_paths(category))
+        {
+            const auto target = LinkManager::resolve(link);
+            if (!target)
+            {
+                return false;
+            }
+            rebuilt.path_to_tag_indices[*target].push_back(tag_index[category]);
+        }
+    }
+
+    data_manager = DataManager(rebuilt);
+    return true;
+}
+
+void PolyFileManager::restore_links(const std::vector<FileTag> &tags, const FilePath &old_path, const FilePath &new_path)
+{
     for (const auto &tag : tags)
     {
-        auto paths = data_manager.get_paths_with_tag(tag);
-        for (const auto &path : paths)
-        {
-            if (!file_manager.create_symlink_in_category(tag, path))
-            {
-                return false;
-            }
-        }
+        file_manager.remove_link(tag, new_path);
+        file_manager.create_link(tag, old_path);
     }
-    return true;
 }

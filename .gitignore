@@ -1,8 +1,14 @@
 # Build and settings
 build/
+build_gui/
+release_build/
+dist/
+*.zip
 .vscode/
 .cache
 .clang-format
+.github/
+
 # Prerequisites
 *.d
 
@@ -44,3 +50,5 @@ build/
 
 # debug information files
 *.dwo
+
+test/

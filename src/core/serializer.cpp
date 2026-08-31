@@ -1,68 +1,129 @@
 #include "serializer.hpp"
 
-json Serializer::data_to_json(const FileTagData &data) const
+#include <fstream>
+
+Serializer::Serializer(const FilePath &repo_path, const FilePath &data_file_name)
+    : repo_path_(repo_path), data_file_name_(data_file_name)
 {
-    json root_j;
-    root_j["index_to_tag"] = data.index_to_tag;
-    root_j["path_to_index_map"] = data.path_to_index_map;
-    return root_j;
 }
 
-json Serializer::file_to_json() const
+const FilePath &Serializer::repo_path() const noexcept
 {
-    std::ifstream ifs(repo_path_ / data_file_name_);
-    if (!ifs.is_open())
+    return repo_path_;
+}
+
+const FilePath &Serializer::data_file_name() const noexcept
+{
+    return data_file_name_;
+}
+
+FilePath Serializer::data_file_path() const
+{
+    return repo_path_ / data_file_name_;
+}
+
+json Serializer::to_json(const FileTagData &data)
+{
+    json root;
+    root["tags"] = data.tags;
+    json path_map = json::object();
+    for (const auto &[path, indices] : data.path_to_tag_indices)
     {
-        return {};
+        path_map[path.generic_string()] = indices;
     }
-    json j;
-    ifs >> j;
-    ifs.close();
-    return j;
+    root["path_to_tag_indices"] = std::move(path_map);
+    return root;
 }
 
-bool Serializer::serialize_to_file(const FileTagData &data) const
+FileTagData Serializer::from_json(const json &root)
 {
-#ifdef _WIN32
-    FilePath data_file_path = repo_path_ / data_file_name_;
-    if (std::filesystem::is_regular_file(data_file_path))
+    FileTagData data;
+    if (!root.is_object() || !root.contains("tags") || !root.contains("path_to_tag_indices") ||
+        !root["tags"].is_array() || !root["path_to_tag_indices"].is_object())
     {
-        if (!Tool::remove_file_hidden(data_file_path))
-        {
-            return false;    
-        }
+        return data;
+    }
+    root["tags"].get_to(data.tags);
+    for (auto it = root["path_to_tag_indices"].begin(); it != root["path_to_tag_indices"].end(); ++it)
+    {
+        data.path_to_tag_indices[FilePath(it.key())] = it.value().get<std::vector<std::size_t>>();
+    }
+    return data;
+}
+
+bool Serializer::save(const FileTagData &data) const
+{
+    const FilePath file = data_file_path();
+    std::error_code ec;
+
+#ifdef _WIN32
+    if (std::filesystem::is_regular_file(file, ec) && !clear_hidden(file))
+    {
+        return false;
     }
 #endif
 
-    json j = data_to_json(data);
-    std::ofstream ofs(repo_path_ / data_file_name_);
+    std::ofstream ofs(file, std::ios::out | std::ios::trunc);
     if (!ofs.is_open())
     {
         return false;
     }
-    ofs << j;
+    ofs << to_json(data);
+    if (!ofs)
+    {
+        return false;
+    }
     ofs.close();
 
 #ifdef _WIN32
-    if (std::filesystem::is_regular_file(data_file_path))
+    ec.clear();
+    if (std::filesystem::is_regular_file(file, ec) && !set_hidden(file))
     {
-        if (!Tool::set_file_hidden(data_file_path))
-        {
-            return false;
-        }
+        return false;
     }
 #endif
     return true;
 }
 
-FileTagData Serializer::deserialize_from_file() const
+FileTagData Serializer::load() const
 {
-    FileTagData data;
-    json j = file_to_json();
-    if (j.contains("index_to_tag") && j.contains("path_to_index_map"))
+    const FilePath file = data_file_path();
+    std::error_code ec;
+    if (!std::filesystem::is_regular_file(file, ec))
     {
-        data.index_to_tag = j["index_to_tag"];
-        data.path_to_index_map = j["path_to_index_map"];
+        return {};
     }
-    return data;
+
+    std::ifstream ifs(file);
+    if (!ifs.is_open())
+    {
+        return {};
+    }
+
+    json root;
+    try
+    {
+        ifs >> root;
+    }
+    catch (const json::parse_error &)
+    {
+        return {};
+    }
+    return from_json(root);
 }
+
+#ifdef _WIN32
+bool Serializer::set_hidden(const FilePath &path)
+{
+    const auto attrs = GetFileAttributesW(path.wstring().c_str());
+    return attrs != INVALID_FILE_ATTRIBUTES && SetFileAttributesW(path.wstring().c_str(),
+                                                                  attrs | FILE_ATTRIBUTE_HIDDEN) != 0;
+}
+
+bool Serializer::clear_hidden(const FilePath &path)
+{
+    const auto attrs = GetFileAttributesW(path.wstring().c_str());
+    return attrs != INVALID_FILE_ATTRIBUTES && SetFileAttributesW(path.wstring().c_str(),
+                                                                  attrs & ~FILE_ATTRIBUTE_HIDDEN) != 0;
+}
+#endif
