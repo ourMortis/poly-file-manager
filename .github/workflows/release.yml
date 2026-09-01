@@ -18,6 +18,35 @@ jobs:
           version: '6.11.2'
           arch: 'win64_mingw'
           cache: true
+          # Pin aqtinstall / py7zr to versions that work on the hosted Python
+          # 3.12 runner. The action's older defaults crash with
+          # "The process '...python.exe' failed with exit code 1".
+          aqtversion: '==3.3.*'
+          py7zrversion: '==1.1.*'
+
+      - name: Prepare MinGW toolchain
+        shell: pwsh
+        run: |
+          # The hosted runner does not always expose MinGW on PATH. Prepend a
+          # known MinGW bin directory so the "MinGW Makefiles" generator works.
+          if (-not (Get-Command g++ -ErrorAction SilentlyContinue)) {
+            $candidates = @(
+              'C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin',
+              'C:\mingw64\bin',
+              'C:\msys64\mingw64\bin'
+            )
+            foreach ($dir in $candidates) {
+              if (Test-Path (Join-Path $dir 'g++.exe')) {
+                Write-Host "Found MinGW at $dir"
+                $env:PATH = "$dir;$env:PATH"
+                Add-Content -Path $env:GITHUB_PATH -Value $dir
+                break
+              }
+            }
+          } else {
+            Write-Host "g++ already on PATH: $((Get-Command g++).Source)"
+          }
+          g++ --version
 
       - name: Configure
         run: cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR
@@ -37,11 +66,22 @@ jobs:
           Copy-Item build\gui\PolyFileManager.exe $stage\
           Get-ChildItem build\gui\*.dll | Copy-Item -Destination $stage\
           Get-ChildItem build\gui -Directory |
-            Where-Object { $_.Name -notin @('CMakeFiles','qt_gui_autogen') } |
+            Where-Object { $_.Name -notin @('CMakeFiles','PolyFileManager_autogen') } |
             ForEach-Object { Copy-Item $_.FullName -Destination $stage\ -Recurse }
 
+          # Copy the MinGW runtime DLLs so the packaged app runs on a machine
+          # that does not have MinGW installed.
+          $gxx = (Get-Command g++.exe -ErrorAction SilentlyContinue).Source
+          if ($gxx) {
+            $mingw = Split-Path $gxx
+            foreach ($dll in 'libstdc++-6.dll','libgcc_s_seh-1.dll','libwinpthread-1.dll') {
+              $p = Join-Path $mingw $dll
+              if (Test-Path $p) { Copy-Item $p $stage\ }
+            }
+          }
+
           Copy-Item build\pfm.exe $stage\
-          Set-Content "$stage\使用说明.txt" "运行 qt_gui.exe 打开图形界面；在命令行中运行 pfm.exe。`n免安装绿色版：解压后直接运行，无需安装。"
+          Set-Content "$stage\使用说明.txt" "运行 PolyFileManager.exe 打开图形界面；在命令行中运行 pfm.exe。`n免安装绿色版：解压后直接运行，无需安装。" -Encoding UTF8
 
           Compress-Archive -Path "$stage\*" -DestinationPath "PolyFileManager-win64.zip" -Force
 
