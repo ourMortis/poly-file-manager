@@ -1,6 +1,7 @@
 #include "mainwindow.hpp"
 
 #include <QApplication>
+#include <QIcon>
 #include <QStyleFactory>
 
 namespace
@@ -126,6 +127,7 @@ int main(int argc, char **argv)
     app.setApplicationName("PolyFileManager");
     app.setStyle(QStyleFactory::create("Fusion"));
     app.setStyleSheet(kDarkTheme);
+    app.setWindowIcon(QIcon(QStringLiteral(":/icon.png")));
 
     MainWindow window;
     window.show();

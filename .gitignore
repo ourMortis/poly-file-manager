@@ -7,7 +7,6 @@ dist/
 .vscode/
 .cache
 .clang-format
-.github/
 
 # Prerequisites
 *.d

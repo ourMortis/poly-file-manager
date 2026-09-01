@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt (MinGW kit)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.11.2'
+          arch: 'win64_mingw'
+          cache: true
+
+      - name: Configure
+        run: cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR
+
+      - name: Build
+        run: |
+          cmake --build build --target pfm
+          cmake --build build --target PolyFileManager
+
+      - name: Stage and zip
+        shell: pwsh
+        run: |
+          $stage = 'dist'
+          Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $stage | Out-Null
+
+          Copy-Item build\gui\PolyFileManager.exe $stage\
+          Get-ChildItem build\gui\*.dll | Copy-Item -Destination $stage\
+          Get-ChildItem build\gui -Directory |
+            Where-Object { $_.Name -notin @('CMakeFiles','qt_gui_autogen') } |
+            ForEach-Object { Copy-Item $_.FullName -Destination $stage\ -Recurse }
+
+          Copy-Item build\pfm.exe $stage\
+          Set-Content "$stage\使用说明.txt" "运行 qt_gui.exe 打开图形界面；在命令行中运行 pfm.exe。`n免安装绿色版：解压后直接运行，无需安装。"
+
+          Compress-Archive -Path "$stage\*" -DestinationPath "PolyFileManager-win64.zip" -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PolyFileManager-win64
+          path: PolyFileManager-win64.zip
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: PolyFileManager-win64.zip

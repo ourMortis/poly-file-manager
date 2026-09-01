@@ -80,10 +80,10 @@ On Windows (from a Qt command prompt, or with the matching MinGW on `PATH`):
 set PATH=C:\Qt\Tools\mingw1310_64\bin;C:\Qt\6.11.2\mingw_64\bin;%PATH%
 cmake -S . -B build_gui -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release `
       -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/mingw_64
-cmake --build build_gui --target qt_gui
+cmake --build build_gui --target PolyFileManager
 ```
 
-`qt_gui` links against `poly_core` and, after the build, `windeployqt` copies the
+`PolyFileManager` links against `poly_core` and, after the build, `windeployqt` copies the
 Qt runtime DLLs next to the executable so it can be started directly.
 
 > **No Qt installed?** Set `-DBUILD_GUI=OFF` (or simply don't have Qt on the
@@ -103,7 +103,7 @@ The build produces:
 
 - `libpoly_core.a` — the reusable static library of the core domain classes.
 - `pfm.exe` — the command-line tool, linking against `poly_core`.
-- `qt_gui.exe` — the Qt Widgets front-end (only when Qt 6 is found).
+- `PolyFileManager.exe` — the Qt Widgets front-end (only when Qt 6 is found).
 
 ### Packaging a Windows release
 
@@ -115,9 +115,9 @@ set QT_MINGW=C:\Qt\Tools\mingw1310_64\bin
 build_release.bat
 ```
 
-It builds `pfm` and `qt_gui`, gathers the executables plus the Qt/MinGW runtime
-into `dist/`, and zips them to `poly-file-manager-<VERSION>-win64.zip`. Extract
-and run `qt_gui.exe` (or use `pfm.exe` from a terminal).
+It builds `pfm` and `PolyFileManager`, gathers the executables plus the Qt/MinGW
+runtime into `dist/`, and zips them to `PolyFileManager-<VERSION>-win64.zip`.
+Extract and run `PolyFileManager.exe` (or use `pfm.exe` from a terminal).
 
 For an automated **GitHub Release**, push a version tag (`v*`); the workflow in
 `.github/workflows/release.yml` builds on Windows, packages the portable ZIP and
@@ -289,10 +289,10 @@ Windows 下（在 Qt 命令提示符中，或先把匹配 MinGW 加入 `PATH`）
 set PATH=C:\Qt\Tools\mingw1310_64\bin;C:\Qt\6.11.2\mingw_64\bin;%PATH%
 cmake -S . -B build_gui -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release `
       -DCMAKE_PREFIX_PATH=C:/Qt/6.11.2/mingw_64
-cmake --build build_gui --target qt_gui
+cmake --build build_gui --target PolyFileManager
 ```
 
-`qt_gui` 链接 `poly_core`；构建完成后 `windeployqt` 会把 Qt 运行库 DLL 拷贝到
+`PolyFileManager` 链接 `poly_core`；构建完成后 `windeployqt` 会把 Qt 运行库 DLL 拷贝到
 可执行文件旁，便于直接运行。
 
 > **没有安装 Qt？** 设置 `-DBUILD_GUI=OFF`（或机器上没有 Qt）即可只编译核心库和 CLI
@@ -310,7 +310,7 @@ cmake --build build_gui --target qt_gui
 
 - `libpoly_core.a` —— 核心领域类的可复用静态库。
 - `pfm.exe` —— 命令行工具，链接 `poly_core`。
-- `qt_gui.exe` —— Qt Widgets 图形界面（仅当找到 Qt 6 时）。
+- `PolyFileManager.exe` —— Qt Widgets 图形界面（仅当找到 Qt 6 时）。
 
 ### 打包 Windows 发布包
 
@@ -322,9 +322,9 @@ set QT_MINGW=C:\Qt\Tools\mingw1310_64\bin
 build_release.bat
 ```
 
-它编译 `pfm` 与 `qt_gui`，把可执行文件以及 Qt/MinGW 运行库集中到 `dist/`，
-再用 `tar` 打包成 `poly-file-manager-<VERSION>-win64.zip`。解压后直接运行
-`qt_gui.exe`（或在命令行使用 `pfm.exe`）。
+它编译 `pfm` 与 `PolyFileManager`，把可执行文件以及 Qt/MinGW 运行库集中到 `dist/`，
+再用 `tar` 打包成 `PolyFileManager-<VERSION>-win64.zip`。解压后直接运行
+`PolyFileManager.exe`（或在命令行使用 `pfm.exe`）。
 
 若要**自动发布到 GitHub Release**：推送一个版本标签（`v*`），仓库里的
 `.github/workflows/release.yml` 会在 Windows 上构建、打包便携 ZIP 并挂到 Release

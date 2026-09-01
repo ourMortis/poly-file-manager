@@ -35,9 +35,9 @@ echo.
 cmake -S . -B build_gui -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%QTDIR%
 if errorlevel 1 exit /b 1
 
-cmake --build build_gui --target qt_gui
+cmake --build build_gui --target PolyFileManager
 if errorlevel 1 exit /b 1
 
 echo.
-echo Done: build_gui\gui\qt_gui.exe  (Qt runtime already deployed beside it)
+echo Done: build_gui\gui\PolyFileManager.exe  (Qt runtime already deployed beside it)
 endlocal
